@@ -1,0 +1,87 @@
+worker_processes 4;
+error_log /var/log/nginx/error.log;
+
+events { worker_connections 1024; }
+
+http {
+  include mime.types;
+
+  default_type application/octet-stream;
+  sendfile on;
+  gzip on;
+  keepalive_timeout 60;
+
+  server {
+    listen ${SERVER_PORT} default_server;
+    listen [::]:${SERVER_PORT} default_server;
+
+    server_name ${API_DOMAIN} ${CLUSTER_DOMAIN};
+
+    location / {
+      proxy_pass http://${API_HOSTNAME}:${API_PORT};
+
+      proxy_http_version 1.1;
+      proxy_buffering off;
+
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+  }
+
+  server {
+    listen ${SERVER_PORT};
+    listen [::]:${SERVER_PORT};
+
+    server_name ${STORAGE_DOMAIN};
+    client_max_body_size 2000m;
+
+    location / {
+      proxy_pass http://${STORAGE_HOSTNAME}:${STORAGE_PORT};
+
+      proxy_http_version 1.1;
+      proxy_buffering off;
+
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+  }
+}
+
+stream {
+  server {
+    listen ${CLUSTER_MASTER_PORT};
+    listen [::]:${CLUSTER_MASTER_PORT};
+
+    proxy_pass ${CLUSTER_HOSTNAME}:${CLUSTER_MASTER_PORT};
+  }
+
+  server {
+    listen ${CLUSTER_NODE_PORT};
+    listen [::]:${CLUSTER_NODE_PORT};
+
+    proxy_pass ${CLUSTER_HOSTNAME}:${CLUSTER_NODE_PORT};
+  }
+
+  server {
+    listen ${CLUSTER_NODE_PORT} udp;
+    listen [::]:${CLUSTER_NODE_PORT} udp;
+
+    proxy_pass ${CLUSTER_HOSTNAME}:${CLUSTER_NODE_PORT};
+  }
+
+  server {
+    listen ${CLUSTER_NETWORK_PORT} udp;
+    listen [::]:${CLUSTER_NETWORK_PORT} udp;
+
+    proxy_pass ${CLUSTER_HOSTNAME}:${CLUSTER_NETWORK_PORT};
+  }
+
+  server {
+    listen ${QUEUE_PORT};
+    listen [::]:${QUEUE_PORT};
+
+    proxy_pass ${QUEUE_HOSTNAME}:${QUEUE_PORT};
+  }
+}

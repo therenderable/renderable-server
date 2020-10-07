@@ -1,0 +1,174 @@
+version: '3.5'
+
+secrets:
+  api_access_key:
+    file: secrets/api_access_key
+  database_username:
+    file: secrets/database_username
+  database_password:
+    file: secrets/database_password
+  storage_access_key:
+    file: secrets/storage_access_key
+  storage_secret_key:
+    file: secrets/storage_secret_key
+  cache_password:
+    file: secrets/cache_password
+  queue_username:
+    file: secrets/queue_username
+  queue_password:
+    file: secrets/queue_password
+
+services:
+  server:
+    build: server/
+    ports:
+      - '${SERVER_PORT}:${SERVER_PORT}'
+      - '${CLUSTER_MASTER_PORT}:${CLUSTER_MASTER_PORT}'
+      - '${CLUSTER_NODE_PORT}:${CLUSTER_NODE_PORT}'
+      - '${CLUSTER_NODE_PORT}:${CLUSTER_NODE_PORT}/udp'
+      - '${CLUSTER_NETWORK_PORT}:${CLUSTER_NETWORK_PORT}/udp'
+      - '${QUEUE_PORT}:${QUEUE_PORT}'
+    environment:
+      - SERVER_PORT
+      - API_DOMAIN
+      - API_HOSTNAME
+      - API_PORT
+      - CLUSTER_DOMAIN
+      - CLUSTER_HOSTNAME
+      - CLUSTER_MASTER_PORT
+      - CLUSTER_NODE_PORT
+      - CLUSTER_NETWORK_PORT
+      - STORAGE_DOMAIN
+      - STORAGE_HOSTNAME
+      - STORAGE_PORT
+      - QUEUE_HOSTNAME
+      - QUEUE_PORT
+    depends_on:
+      - api
+    restart: unless-stopped
+  api:
+    build: api/
+    hostname: ${API_HOSTNAME}
+    expose:
+      - '${API_PORT}'
+    environment:
+      - API_VERSION
+      - API_PORT
+      - CLUSTER_DOMAIN
+      - CLUSTER_HOSTNAME
+      - CLUSTER_PORT
+      - CLUSTER_MASTER_PORT
+      - DATABASE_HOSTNAME
+      - DATABASE_PORT
+      - DATABASE_USERNAME_FILE=database_username
+      - DATABASE_PASSWORD_FILE=database_password
+      - STORAGE_DOMAIN
+      - STORAGE_HOSTNAME
+      - STORAGE_PORT
+      - STORAGE_ACCESS_KEY_FILE=storage_access_key
+      - STORAGE_SECRET_KEY_FILE=storage_secret_key
+      - CACHE_HOSTNAME
+      - CACHE_PORT
+      - CACHE_PASSWORD=cache_password
+      - QUEUE_HOSTNAME
+      - QUEUE_PORT
+      - QUEUE_USERNAME_FILE=queue_username
+      - QUEUE_PASSWORD_FILE=queue_password
+    secrets:
+      - api_access_key
+      - database_username
+      - database_password
+      - storage_access_key
+      - storage_secret_key
+      - cache_password
+      - queue_username
+      - queue_password
+    command: 'uvicorn main:app --host 0.0.0.0 --port ${API_PORT}'
+    depends_on:
+      - cluster
+      - database
+      - storage
+      - cache
+      - queue
+    restart: unless-stopped
+  cluster:
+    image: docker:19.03.12-dind
+    hostname: ${CLUSTER_HOSTNAME}
+    expose:
+      - '${CLUSTER_PORT}'
+      - '${CLUSTER_MASTER_PORT}'
+      - '${CLUSTER_NODE_PORT}'
+      - '${CLUSTER_NODE_PORT}/udp'
+      - '${CLUSTER_NETWORK_PORT}/udp'
+    privileged: true
+    volumes:
+      - 'cluster:/var/lib/docker/'
+    restart: unless-stopped
+  database:
+    image: mongo:4.2.6
+    hostname: ${DATABASE_HOSTNAME}
+    expose:
+      - '${DATABASE_PORT}'
+    environment:
+      - MONGO_INITDB_DATABASE=db
+      - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/database_username
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/database_password
+    secrets:
+      - database_username
+      - database_password
+    volumes:
+      - database:/data/db/
+    command: 'mongod --port ${DATABASE_PORT}'
+    restart: unless-stopped
+  storage:
+    image: minio/minio:RELEASE.2020-05-16T01-33-21Z
+    hostname: ${STORAGE_HOSTNAME}
+    expose:
+      - '${STORAGE_PORT}'
+    environment:
+      - MINIO_ACCESS_KEY_FILE=storage_access_key
+      - MINIO_SECRET_KEY_FILE=storage_secret_key
+      - MINIO_BROWSER=off
+    secrets:
+      - storage_access_key
+      - storage_secret_key
+    volumes:
+      - storage:/data/
+    command: 'minio server --address :${STORAGE_PORT} /data/'
+    restart: unless-stopped
+  cache:
+    image: redis:6.0.5
+    hostname: ${CACHE_HOSTNAME}
+    expose:
+      - '${CACHE_PORT}'
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/cache_password
+    secrets:
+      - cache_password
+    volumes:
+      - cache:/data/
+    command: '/bin/bash -c \
+      "redis-server --port ${CACHE_PORT} --requirepass \"$$(cat $$REDIS_PASSWORD_FILE)\""'
+    restart: unless-stopped
+  queue:
+    image: rabbitmq:3.8.9
+    hostname: ${QUEUE_HOSTNAME}
+    expose:
+      - '${QUEUE_PORT}'
+    environment:
+      - RABBITMQ_NODE_PORT=${QUEUE_PORT}
+      - RABBITMQ_DEFAULT_USER_FILE=/run/secrets/queue_username
+      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/queue_password
+    secrets:
+      - queue_username
+      - queue_password
+    volumes:
+      - 'queue:/data/'
+    restart: unless-stopped
+
+volumes:
+  cluster:
+  database:
+  storage:
+  cache:
+  queue:
