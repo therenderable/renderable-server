@@ -33,7 +33,6 @@ services:
       - API_DOMAIN
       - API_HOSTNAME
       - API_PORT
-      - CLUSTER_DOMAIN
       - CLUSTER_HOSTNAME
       - CLUSTER_MASTER_PORT
       - CLUSTER_NODE_PORT
@@ -54,10 +53,11 @@ services:
     environment:
       - API_VERSION
       - API_PORT
-      - CLUSTER_DOMAIN
+      - CLUSTER_DOMAIN_IP
       - CLUSTER_HOSTNAME
       - CLUSTER_PORT
       - CLUSTER_MASTER_PORT
+      - CLUSTER_CERTIFICATE_PATH=/etc/ssl/certs/cluster/
       - DATABASE_HOSTNAME
       - DATABASE_PORT
       - DATABASE_USERNAME_FILE=database_username
@@ -83,7 +83,8 @@ services:
       - cache_password
       - queue_username
       - queue_password
-    command: 'uvicorn main:app --host 0.0.0.0 --port ${API_PORT}'
+    volumes:
+      - 'cluster_certificate:/etc/ssl/certs/cluster/'
     depends_on:
       - cluster
       - database
@@ -103,6 +104,7 @@ services:
     privileged: true
     volumes:
       - 'cluster:/var/lib/docker/'
+      - 'cluster_certificate:/certs/client/'
     restart: unless-stopped
   database:
     image: mongo:4.2.6
@@ -168,6 +170,7 @@ services:
 
 volumes:
   cluster:
+  cluster_certificate:
   database:
   storage:
   cache:

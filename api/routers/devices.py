@@ -1,15 +1,23 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
-from ..models import ObjectID, Device
-from ..services import authentication as auth, devices
+import exceptions
+from models import ObjectID, NodeType, ErrorResponse, DeviceRequest, DeviceResponse
+from controllers import authentication as auth, devices
 
 
 router = APIRouter()
 
-@router.post('/')
-def join_cluster(response_model = Device):
-  return devices.join_cluster()
+responses = {
+  403: {'model': ErrorResponse}
+}
 
-@router.get('/{device_id}')
-def get_devices(device_id: ObjectID, api_key: auth.APIKey = auth.api_key):
-  return devices.get_device(device_id)
+@router.post('/', response_model = DeviceResponse, responses = responses)
+def join_device(device: DeviceRequest, request: Request, api_key: auth.APIKey = auth.get_api_key(optional = True)):
+  if api_key is None and device.node_type == NodeType.manager:
+    raise exceptions.invalid_api_key
+
+  return devices.join(request.state.context, device)
+
+@router.get('/{device_id}', response_model = DeviceResponse, responses = responses, response_model_exclude_unset = True)
+def get_device_by_id(device_id: ObjectID, request: Request, api_key: auth.APIKey = auth.get_api_key()):
+  return devices.get(request.state.context, device_id)

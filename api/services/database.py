@@ -1,4 +1,7 @@
 import pymongo
+from bson.objectid import ObjectId
+
+from models import DeviceDocument
 
 
 class Database:
@@ -9,23 +12,23 @@ class Database:
     self.password = password
 
     self.client = pymongo.MongoClient(
-      self.hostname, self.port, username = self.username, password = self.password)
+      self.hostname, int(self.port), username = self.username, password = self.password)
     self.db = self.client['db']
 
-  def save_device(self, device):
-    devices = self.db['devices']
-    devices.insert_one(device.dict(by_alias = True))
+  def find(self, document_id, collection_name):
+    collection = self.db[collection_name]
+    document = collection.find_one(ObjectId(document_id))
 
-    return device
+    return DeviceDocument(**document)
 
-  def save_job(self, job):
-    jobs = self.db['jobs']
-    jobs.insert_one(job.dict(by_alias = True))
+  def save(self, document, collection_name):
+    collection = self.db[collection_name]
+    collection.insert_one(document.dict(by_alias = True))
 
-    return job
+    return document
 
-  def save_tasks(self, tasks):
-    tasks = self.db['tasks']
-    tasks.insertMany([task.dict(by_alias = True) for task in tasks])
+  def save_many(self, documents, collection_name):
+    collection = self.db[collection_name]
+    collection.insertMany([document.dict(by_alias = True) for document in documents])
 
-    return tasks
+    return documents

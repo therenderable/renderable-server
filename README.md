@@ -18,3 +18,5 @@ docker-compose up -d
 ## Copyright and license
 
 Copyright (c) 2020, Renderable, Inc. All rights reserved.
+
+Project developed under a [Proprietary License](LICENSE.md).

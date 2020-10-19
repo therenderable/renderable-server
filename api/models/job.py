@@ -14,3 +14,7 @@ class Job(BaseModel):
   scene_url: HttpUrl = Field(...)
   created_at: datetime = Field(...)
   updated_at: datetime = None
+
+
+  class Config:
+    allow_population_by_field_name = True

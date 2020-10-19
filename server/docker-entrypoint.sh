@@ -6,7 +6,6 @@ variables='${SERVER_PORT}
           ${API_DOMAIN}
           ${API_HOSTNAME}
           ${API_PORT}
-          ${CLUSTER_DOMAIN}
           ${CLUSTER_HOSTNAME}
           ${CLUSTER_MASTER_PORT}
           ${CLUSTER_NODE_PORT}

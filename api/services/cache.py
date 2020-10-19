@@ -7,7 +7,9 @@ class Cache:
     self.port = port
     self.password = password
 
-    self.connection = redis.ConnectionPool(self.hostname, self.port, 0, self.password)
+    self.connection = redis.ConnectionPool(
+      host = self.hostname, port = self.port, db = 0, password = self.password)
+
     self.client = None
 
   def _connect(self):

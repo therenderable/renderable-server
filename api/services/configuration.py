@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 
 class Configuration:
@@ -8,7 +7,7 @@ class Configuration:
 
     self.secrets = {}
 
-    secret_filenames = Path(self.secret_path).rglob('*')
+    secret_filenames = self.secret_path.rglob('*')
 
     for filename in secret_filenames:
       with open(filename, 'r') as file:
@@ -18,4 +17,4 @@ class Configuration:
       self.secrets[name] = value
 
   def get(self, name):
-    return self.secrets.get(name) or os.environ[name]
+    return self.secrets.get(name) or os.environ.get(name)

@@ -15,7 +15,7 @@ http {
     listen ${SERVER_PORT} default_server;
     listen [::]:${SERVER_PORT} default_server;
 
-    server_name ${API_DOMAIN} ${CLUSTER_DOMAIN};
+    server_name ${API_DOMAIN};
 
     location / {
       proxy_pass http://${API_HOSTNAME}:${API_PORT};
