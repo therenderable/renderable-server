@@ -4,5 +4,4 @@ fastapi>=0.61.0
 docker>=4.3.0
 pymongo>=3.11.0
 minio>=6.0.0
-redis>=3.5.3
 pika>=1.1.0

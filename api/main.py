@@ -5,7 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from services import Configuration, Cluster, Database, Storage, Cache, Queue
+from services import Configuration, Cluster, Database, Storage, Queue
 from middlewares import RequestContext
 from routers import api
 
@@ -29,8 +29,6 @@ storage = Storage(
   config.get('STORAGE_HOSTNAME'), config.get('STORAGE_PORT'),
   config.get('STORAGE_ACCESS_KEY'), config.get('STORAGE_SECRET_KEY'))
 
-cache = Cache(config.get('CACHE_HOSTNAME'), config.get('CACHE_PORT'), config.get('CACHE_PASSWORD'))
-
 queue = Queue(
   config.get('QUEUE_HOSTNAME'), config.get('QUEUE_PORT'),
   config.get('QUEUE_USERNAME'), config.get('QUEUE_PASSWORD'))
@@ -40,7 +38,6 @@ context = {
   'cluster': cluster,
   'database': database,
   'storage': storage,
-  'cache': cache,
   'queue': queue
 }
 

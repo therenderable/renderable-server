@@ -11,8 +11,6 @@ secrets:
     file: secrets/storage_access_key
   storage_secret_key:
     file: secrets/storage_secret_key
-  cache_password:
-    file: secrets/cache_password
   queue_username:
     file: secrets/queue_username
   queue_password:
@@ -67,9 +65,6 @@ services:
       - STORAGE_PORT
       - STORAGE_ACCESS_KEY_FILE=storage_access_key
       - STORAGE_SECRET_KEY_FILE=storage_secret_key
-      - CACHE_HOSTNAME
-      - CACHE_PORT
-      - CACHE_PASSWORD=cache_password
       - QUEUE_HOSTNAME
       - QUEUE_PORT
       - QUEUE_USERNAME_FILE=queue_username
@@ -80,7 +75,6 @@ services:
       - database_password
       - storage_access_key
       - storage_secret_key
-      - cache_password
       - queue_username
       - queue_password
     volumes:
@@ -89,7 +83,6 @@ services:
       - cluster
       - database
       - storage
-      - cache
       - queue
     restart: unless-stopped
   cluster:
@@ -138,20 +131,6 @@ services:
       - storage:/data/
     command: 'minio server --address :${STORAGE_PORT} /data/'
     restart: unless-stopped
-  cache:
-    image: redis:6.0.5
-    hostname: ${CACHE_HOSTNAME}
-    expose:
-      - '${CACHE_PORT}'
-    environment:
-      - REDIS_PASSWORD_FILE=/run/secrets/cache_password
-    secrets:
-      - cache_password
-    volumes:
-      - cache:/data/
-    command: '/bin/bash -c \
-      "redis-server --port ${CACHE_PORT} --requirepass \"$$(cat $$REDIS_PASSWORD_FILE)\""'
-    restart: unless-stopped
   queue:
     image: rabbitmq:3.8.9
     hostname: ${QUEUE_HOSTNAME}
@@ -173,5 +152,4 @@ volumes:
   cluster_certificate:
   database:
   storage:
-  cache:
   queue:
