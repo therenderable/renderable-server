@@ -3,16 +3,16 @@ from datetime import datetime
 from models import DeviceDocument, DeviceResponse
 
 
-def join(context, device_request):
+def join(context, device):
   cluster = context['cluster']
   database = context['database']
 
-  token = cluster.join(device_request.dict())
-  device_document = DeviceDocument(**device_request.dict())
+  token = cluster.join(device.dict())
+  device_document = DeviceDocument(**device.dict())
 
   database.save(device_document, 'devices')
 
-  return DeviceResponse(token = token, **device_document.dict())
+  return DeviceResponse(**device_document.dict(), token = token)
 
 def get(context, device_id):
   database = context['database']

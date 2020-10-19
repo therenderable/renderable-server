@@ -1,5 +1,4 @@
 import pymongo
-from bson.objectid import ObjectId
 
 from models import DeviceDocument
 
@@ -17,7 +16,7 @@ class Database:
 
   def find(self, document_id, collection_name):
     collection = self.db[collection_name]
-    document = collection.find_one(ObjectId(document_id))
+    document = collection.find_one(document_id)
 
     return DeviceDocument(**document)
 

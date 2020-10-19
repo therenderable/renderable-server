@@ -1,13 +1,15 @@
-from pydantic import validator, BaseModel, Field
+from pydantic import validator, Field
+
+from . import Base
 
 
-class FrameRange(BaseModel):
+class FrameRange(Base):
   start: int = Field(...)
   end: int = Field(...)
 
-  @validator('start')
+  @validator('end')
   def validate_range(cls, value, values):
-    if value > values['end']:
+    if value > values['start']:
       raise ValueError('invalid range')
 
     return value

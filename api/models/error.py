@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from . import Base
 
 
-class ErrorResponse(BaseModel):
+class ErrorResponse(Base):
   detail: str = Field(...)

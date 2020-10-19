@@ -1,5 +1,4 @@
 from bson.objectid import ObjectId
-from bson.errors import InvalidId
 
 
 class ObjectID(ObjectId):
@@ -13,10 +12,7 @@ class ObjectID(ObjectId):
 
   @classmethod
   def validate(cls, value):
-    if isinstance(value, ObjectId):
-      return str(value)
-    else:
-      try:
-        return str(ObjectId(value))
-      except InvalidId:
-        raise ValueError('invalid ID')
+    if not ObjectId.is_valid(value):
+      raise ValueError('invalid ID')
+
+    return ObjectID(value)
