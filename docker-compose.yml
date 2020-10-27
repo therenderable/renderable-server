@@ -3,6 +3,16 @@ version: '3.5'
 secrets:
   api_access_key:
     file: secrets/api_access_key
+  registry_username:
+    file: secrets/registry_username
+  registry_password:
+    file: secrets/registry_password
+  registry_encrypted_password:
+    file: secrets/registry_encrypted_password
+  registry_secret_key:
+    file: secrets/registry_secret_key
+  cache_password:
+    file: secrets/cache_password
   database_username:
     file: secrets/database_username
   database_password:
@@ -21,7 +31,7 @@ services:
     build: server/
     ports:
       - '${SERVER_PORT}:${SERVER_PORT}'
-      - '${CLUSTER_MASTER_PORT}:${CLUSTER_MASTER_PORT}'
+      - '${CLUSTER_MANAGER_PORT}:${CLUSTER_MANAGER_PORT}'
       - '${CLUSTER_NODE_PORT}:${CLUSTER_NODE_PORT}'
       - '${CLUSTER_NODE_PORT}:${CLUSTER_NODE_PORT}/udp'
       - '${CLUSTER_NETWORK_PORT}:${CLUSTER_NETWORK_PORT}/udp'
@@ -32,9 +42,12 @@ services:
       - API_HOSTNAME
       - API_PORT
       - CLUSTER_HOSTNAME
-      - CLUSTER_MASTER_PORT
+      - CLUSTER_MANAGER_PORT
       - CLUSTER_NODE_PORT
       - CLUSTER_NETWORK_PORT
+      - REGISTRY_DOMAIN
+      - REGISTRY_HOSTNAME
+      - REGISTRY_PORT
       - STORAGE_DOMAIN
       - STORAGE_HOSTNAME
       - STORAGE_PORT
@@ -50,27 +63,25 @@ services:
       - '${API_PORT}'
     environment:
       - API_VERSION
+      - API_SECURE
       - API_PORT
       - CLUSTER_DOMAIN_IP
       - CLUSTER_HOSTNAME
       - CLUSTER_PORT
-      - CLUSTER_MASTER_PORT
+      - CLUSTER_MANAGER_PORT
       - CLUSTER_CERTIFICATE_PATH=/etc/ssl/certs/cluster/
+      - REGISTRY_DOMAIN
       - DATABASE_HOSTNAME
       - DATABASE_PORT
-      - DATABASE_USERNAME_FILE=database_username
-      - DATABASE_PASSWORD_FILE=database_password
       - STORAGE_DOMAIN
       - STORAGE_HOSTNAME
       - STORAGE_PORT
-      - STORAGE_ACCESS_KEY_FILE=storage_access_key
-      - STORAGE_SECRET_KEY_FILE=storage_secret_key
       - QUEUE_HOSTNAME
       - QUEUE_PORT
-      - QUEUE_USERNAME_FILE=queue_username
-      - QUEUE_PASSWORD_FILE=queue_password
     secrets:
       - api_access_key
+      - registry_username
+      - registry_password
       - database_username
       - database_password
       - storage_access_key
@@ -78,9 +89,10 @@ services:
       - queue_username
       - queue_password
     volumes:
-      - 'cluster_certificate:/etc/ssl/certs/cluster/'
+      - cluster_certificate:/etc/ssl/certs/cluster/
     depends_on:
       - cluster
+      - registry
       - database
       - storage
       - queue
@@ -90,14 +102,56 @@ services:
     hostname: ${CLUSTER_HOSTNAME}
     expose:
       - '${CLUSTER_PORT}'
-      - '${CLUSTER_MASTER_PORT}'
+      - '${CLUSTER_MANAGER_PORT}'
       - '${CLUSTER_NODE_PORT}'
       - '${CLUSTER_NODE_PORT}/udp'
       - '${CLUSTER_NETWORK_PORT}/udp'
     privileged: true
     volumes:
-      - 'cluster:/var/lib/docker/'
-      - 'cluster_certificate:/certs/client/'
+      - cluster:/var/lib/docker/
+      - cluster_certificate:/certs/client/
+    command: '--insecure-registry=${CLUSTER_INSECURE_REGISTRY}'
+    restart: unless-stopped
+  registry:
+    image: registry:2.7
+    hostname: ${REGISTRY_HOSTNAME}
+    expose:
+      - '${REGISTRY_PORT}'
+    environment:
+      - REGISTRY_HTTP_ADDR=:${REGISTRY_PORT}
+      - REGISTRY_HTTP_SECRET_FILE=/run/secrets/registry_secret_key
+      - REGISTRY_AUTH=htpasswd
+      - REGISTRY_AUTH_HTPASSWD_REALM='Renderable Registry'
+      - REGISTRY_AUTH_HTPASSWD_PATH=/run/secrets/registry_encrypted_password
+      - REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=redis
+      - REGISTRY_REDIS_ADDR=${CACHE_HOSTNAME}:${CACHE_PORT}
+      - REGISTRY_REDIS_PASSWORD_FILE=/run/secrets/cache_password
+    secrets:
+      - registry_encrypted_password
+      - registry_secret_key
+      - cache_password
+    volumes:
+      - registry:/var/lib/registry/
+    command: '/bin/sh -c \
+      "REGISTRY_HTTP_SECRET=\"$$(cat $$REGISTRY_HTTP_SECRET_FILE)\"
+      REGISTRY_REDIS_PASSWORD=\"$$(cat $$REGISTRY_REDIS_PASSWORD_FILE)\"
+      registry serve /etc/docker/registry/config.yml"'
+    depends_on:
+      - cache
+    restart: unless-stopped
+  cache:
+    image: redis:6.0.5
+    hostname: ${CACHE_HOSTNAME}
+    expose:
+      - '${CACHE_PORT}'
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/cache_password
+    secrets:
+      - cache_password
+    volumes:
+      - cache:/data/
+    command: '/bin/bash -c \
+      "redis-server --port ${CACHE_PORT} --requirepass \"$$(cat $$REDIS_PASSWORD_FILE)\""'
     restart: unless-stopped
   database:
     image: mongo:4.2.6
@@ -144,12 +198,14 @@ services:
       - queue_username
       - queue_password
     volumes:
-      - 'queue:/data/'
+      - queue:/data/
     restart: unless-stopped
 
 volumes:
   cluster:
   cluster_certificate:
+  registry:
+  cache:
   database:
   storage:
   queue:

@@ -9,12 +9,18 @@ class ClusterStatus(int, Enum):
 
 
 class Cluster:
-  def __init__(self, domain_ip, hostname, port, master_port, certificate_path, secrets):
+  def __init__(self,
+      domain_ip, hostname, port, manager_port, certificate_path,
+      registry_domain, secure_registry_domain, registry_username, registry_password, secrets):
     self.domain_ip = domain_ip
     self.hostname = hostname
     self.port = port
-    self.master_port = master_port
+    self.manager_port = manager_port
     self.certificate_path = certificate_path
+    self.registry_domain = registry_domain
+    self.secure_registry_domain = secure_registry_domain
+    self.registry_username = registry_username
+    self.registry_password = registry_password
     self.secrets = secrets
 
     public_certificate_path = str(self.certificate_path / 'cert.pem')
@@ -26,15 +32,22 @@ class Cluster:
     self.client = docker.DockerClient(f'https://{self.hostname}:{self.port}', tls = tls_config)
 
     self._initialize()
+    self._login_registry()
     self._register_secrets()
 
   def _initialize(self):
     try:
       self.client.swarm.init(
-        advertise_addr = self.domain_ip, listen_addr = f'0.0.0.0:{self.master_port}')
+        advertise_addr = self.domain_ip, listen_addr = f'0.0.0.0:{self.manager_port}')
     except docker.errors.APIError as error:
       if error.status_code != ClusterStatus.node_already_initialized:
         raise error
+
+  def _login_registry(self):
+    protocol = 'https' if self.secure_registry_domain else 'http'
+    registry_url = f'{protocol}://{self.registry_domain}/v2/'
+
+    self.client.login(self.registry_username, self.registry_password, registry = registry_url)
 
   def _register_secrets(self):
     try:

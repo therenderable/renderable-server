@@ -13,25 +13,39 @@ from routers import api
 config = Configuration(Path('/run/secrets/'))
 
 cluster_secrets = { name: config.get(name) for name in ['API_ACCESS_KEY', 'QUEUE_USERNAME', 'QUEUE_PASSWORD'] }
+secure = config.get('API_SECURE') == 'true'
 
 cluster = Cluster(
   config.get('CLUSTER_DOMAIN_IP'),
-  config.get('CLUSTER_HOSTNAME'), config.get('CLUSTER_PORT'), config.get('CLUSTER_MASTER_PORT'),
+  config.get('CLUSTER_HOSTNAME'),
+  config.get('CLUSTER_PORT'),
+  config.get('CLUSTER_MANAGER_PORT'),
   Path(config.get('CLUSTER_CERTIFICATE_PATH')),
+  config.get('REGISTRY_DOMAIN'),
+  secure,
+  config.get('REGISTRY_USERNAME'),
+  config.get('REGISTRY_PASSWORD'),
   cluster_secrets)
 
 database = Database(
-  config.get('DATABASE_HOSTNAME'), config.get('DATABASE_PORT'),
-  config.get('DATABASE_USERNAME'), config.get('DATABASE_PASSWORD'))
+  config.get('DATABASE_HOSTNAME'),
+  config.get('DATABASE_PORT'),
+  config.get('DATABASE_USERNAME'),
+  config.get('DATABASE_PASSWORD'))
 
 storage = Storage(
   config.get('STORAGE_DOMAIN'),
-  config.get('STORAGE_HOSTNAME'), config.get('STORAGE_PORT'),
-  config.get('STORAGE_ACCESS_KEY'), config.get('STORAGE_SECRET_KEY'))
+  secure,
+  config.get('STORAGE_HOSTNAME'),
+  config.get('STORAGE_PORT'),
+  config.get('STORAGE_ACCESS_KEY'),
+  config.get('STORAGE_SECRET_KEY'))
 
 queue = Queue(
-  config.get('QUEUE_HOSTNAME'), config.get('QUEUE_PORT'),
-  config.get('QUEUE_USERNAME'), config.get('QUEUE_PASSWORD'))
+  config.get('QUEUE_HOSTNAME'),
+  config.get('QUEUE_PORT'),
+  config.get('QUEUE_USERNAME'),
+  config.get('QUEUE_PASSWORD'))
 
 context = {
   'config': config,

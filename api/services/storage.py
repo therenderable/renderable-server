@@ -3,8 +3,9 @@ import minio
 
 
 class Storage:
-  def __init__(self, domain, hostname, port, access_key, secret_key):
+  def __init__(self, domain, secure_domain, hostname, port, access_key, secret_key):
     self.domain = domain
+    self.secure_domain = secure_domain
     self.hostname = hostname
     self.port = port
     self.access_key = access_key
@@ -41,7 +42,8 @@ class Storage:
     else:
       object_name = f'{job_id}/{task_id}/{filename}'
 
-    resource_url = f'http://{self.domain}/{bucket_name}/{object_name}'
+    protocol = 'https' if self.secure_domain else 'http'
+    resource_url = f'{protocol}://{self.domain}/{bucket_name}/{object_name}'
 
     self.client.put_object(bucket_name, object_name, data, content_length, content_type)
 

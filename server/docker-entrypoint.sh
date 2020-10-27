@@ -7,9 +7,12 @@ variables='${SERVER_PORT}
           ${API_HOSTNAME}
           ${API_PORT}
           ${CLUSTER_HOSTNAME}
-          ${CLUSTER_MASTER_PORT}
+          ${CLUSTER_MANAGER_PORT}
           ${CLUSTER_NODE_PORT}
           ${CLUSTER_NETWORK_PORT}
+          ${REGISTRY_DOMAIN}
+          ${REGISTRY_HOSTNAME}
+          ${REGISTRY_PORT}
           ${STORAGE_DOMAIN}
           ${STORAGE_HOSTNAME}
           ${STORAGE_PORT}
