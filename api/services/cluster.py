@@ -1,5 +1,6 @@
 from enum import Enum
 
+import requests
 import docker
 
 
@@ -23,6 +24,9 @@ class Cluster:
     self.registry_password = registry_password
     self.secrets = secrets
 
+    protocol = 'https' if self.secure_registry_domain else 'http'
+    self.registry_base_url = f'{protocol}://{self.registry_domain}/v2'
+
     public_certificate_path = str(self.certificate_path / 'cert.pem')
     private_certificate_path = str(self.certificate_path / 'key.pem')
 
@@ -32,8 +36,8 @@ class Cluster:
     self.client = docker.DockerClient(f'https://{self.hostname}:{self.port}', tls = tls_config)
 
     self._initialize()
-    self._login_registry()
     self._register_secrets()
+    self._login_registry()
 
   def _initialize(self):
     try:
@@ -43,11 +47,7 @@ class Cluster:
       if error.status_code != ClusterStatus.node_already_initialized:
         raise error
 
-  def _login_registry(self):
-    protocol = 'https' if self.secure_registry_domain else 'http'
-    registry_url = f'{protocol}://{self.registry_domain}/v2/'
-
-    self.client.login(self.registry_username, self.registry_password, registry = registry_url)
+    self.client.swarm.reload()
 
   def _register_secrets(self):
     try:
@@ -62,8 +62,30 @@ class Cluster:
       if error.status_code != ClusterStatus.secret_already_exists:
         raise error
 
+  def _login_registry(self):
+    self.client.login(self.registry_username, self.registry_password, registry = self.registry_base_url)
+
+  def get_container_names(self):
+    request = requests.get(f'{self.registry_base_url}/_catalog', auth = (self.registry_username, self.registry_password))
+    request.raise_for_status()
+
+    response = request.json()
+    containers = response['repositories']
+
+    return containers
+
   def join(self, device):
     node_type = device['node_type'].capitalize()
 
-    self.client.swarm.reload()
     return self.client.swarm.attrs['JoinTokens'][node_type]
+
+  def scale(self, container_name, replicas):
+    pass
+    # total_nodes: get total number active worker nodes
+    # total_containers: get total number active containers
+    # total_containers_x: get total number active containers for x type
+    # alocation = max(0, 4 * total_nodes - total_containers)
+    # if allocation > 0:
+    #     run min(allocation, replicas) N services for container x type
+    # else
+    #     assert total_containers_x > replicas / 2

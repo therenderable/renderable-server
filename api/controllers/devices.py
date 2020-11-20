@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import exceptions
 from models import DeviceDocument, DeviceResponse
 
 
@@ -18,4 +19,7 @@ def get(context, device_id):
   database = context['database']
   device_document = database.find(device_id, 'devices')
 
-  return device_document.dict()
+  if device_document is None:
+    raise exceptions.invalid_resource_id
+
+  return DeviceResponse(**device_document.dict())

@@ -21,10 +21,14 @@ secrets:
     file: secrets/storage_access_key
   storage_secret_key:
     file: secrets/storage_secret_key
-  queue_username:
-    file: secrets/queue_username
-  queue_password:
-    file: secrets/queue_password
+  task_queue_username:
+    file: secrets/task_queue_username
+  task_queue_password:
+    file: secrets/task_queue_password
+  state_queue_username:
+    file: secrets/state_queue_username
+  state_queue_password:
+    file: secrets/state_queue_password
 
 services:
   server:
@@ -35,7 +39,7 @@ services:
       - '${CLUSTER_NODE_PORT}:${CLUSTER_NODE_PORT}'
       - '${CLUSTER_NODE_PORT}:${CLUSTER_NODE_PORT}/udp'
       - '${CLUSTER_NETWORK_PORT}:${CLUSTER_NETWORK_PORT}/udp'
-      - '${QUEUE_PORT}:${QUEUE_PORT}'
+      - '${TASK_QUEUE_PORT}:${TASK_QUEUE_PORT}'
     environment:
       - SERVER_PORT
       - API_DOMAIN
@@ -51,8 +55,8 @@ services:
       - STORAGE_DOMAIN
       - STORAGE_HOSTNAME
       - STORAGE_PORT
-      - QUEUE_HOSTNAME
-      - QUEUE_PORT
+      - TASK_QUEUE_HOSTNAME
+      - TASK_QUEUE_PORT
     depends_on:
       - api
     restart: unless-stopped
@@ -63,7 +67,8 @@ services:
       - '${API_PORT}'
     environment:
       - API_VERSION
-      - API_SECURE
+      - API_PRODUCTION
+      - API_WORKERS
       - API_PORT
       - CLUSTER_DOMAIN_IP
       - CLUSTER_HOSTNAME
@@ -76,8 +81,10 @@ services:
       - STORAGE_DOMAIN
       - STORAGE_HOSTNAME
       - STORAGE_PORT
-      - QUEUE_HOSTNAME
-      - QUEUE_PORT
+      - TASK_QUEUE_HOSTNAME
+      - TASK_QUEUE_PORT
+      - STATE_QUEUE_HOSTNAME
+      - STATE_QUEUE_PORT
     secrets:
       - api_access_key
       - registry_username
@@ -86,8 +93,10 @@ services:
       - database_password
       - storage_access_key
       - storage_secret_key
-      - queue_username
-      - queue_password
+      - task_queue_username
+      - task_queue_password
+      - state_queue_username
+      - state_queue_password
     volumes:
       - cluster_certificate:/etc/ssl/certs/cluster/
     depends_on:
@@ -95,7 +104,8 @@ services:
       - registry
       - database
       - storage
-      - queue
+      - task_queue
+      - state_queue
     restart: unless-stopped
   cluster:
     image: docker:19.03.12-dind
@@ -185,20 +195,35 @@ services:
       - storage:/data/
     command: 'minio server --address :${STORAGE_PORT} /data/'
     restart: unless-stopped
-  queue:
-    image: rabbitmq:3.8.9
-    hostname: ${QUEUE_HOSTNAME}
+  task_queue:
+    image: rabbitmq:3.8-management
+    hostname: ${TASK_QUEUE_HOSTNAME}
     expose:
-      - '${QUEUE_PORT}'
+      - '${TASK_QUEUE_PORT}'
     environment:
-      - RABBITMQ_NODE_PORT=${QUEUE_PORT}
-      - RABBITMQ_DEFAULT_USER_FILE=/run/secrets/queue_username
-      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/queue_password
+      - RABBITMQ_NODE_PORT=${TASK_QUEUE_PORT}
+      - RABBITMQ_DEFAULT_USER_FILE=/run/secrets/task_queue_username
+      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/task_queue_password
     secrets:
-      - queue_username
-      - queue_password
+      - task_queue_username
+      - task_queue_password
     volumes:
-      - queue:/data/
+      - task_queue:/data/
+    restart: unless-stopped
+  state_queue:
+    image: rabbitmq:3.8-management
+    hostname: ${STATE_QUEUE_HOSTNAME}
+    expose:
+      - '${STATE_QUEUE_PORT}'
+    environment:
+      - RABBITMQ_NODE_PORT=${STATE_QUEUE_PORT}
+      - RABBITMQ_DEFAULT_USER_FILE=/run/secrets/state_queue_username
+      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/state_queue_password
+    secrets:
+      - state_queue_username
+      - state_queue_password
+    volumes:
+      - state_queue:/data/
     restart: unless-stopped
 
 volumes:
@@ -208,4 +233,5 @@ volumes:
   cache:
   database:
   storage:
-  queue:
+  task_queue:
+  state_queue:

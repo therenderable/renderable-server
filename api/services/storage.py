@@ -1,3 +1,4 @@
+import os
 import json
 import minio
 
@@ -10,6 +11,9 @@ class Storage:
     self.port = port
     self.access_key = access_key
     self.secret_key = secret_key
+
+    protocol = 'https' if self.secure_domain else 'http'
+    self.base_url = f'{protocol}://{self.domain}'
 
     self.client = minio.Minio(
       f'{self.hostname}:{self.port}', self.access_key, self.secret_key, secure = False)
@@ -32,23 +36,28 @@ class Storage:
         self.client.make_bucket(bucket_name)
         self.client.set_bucket_policy(bucket_name, json.dumps(policy))
 
-  def upload(self, data, metadata, bucket_name, job_id, task_id = None):
-    filename = metadata['filename']
-    content_type = metadata['content_type']
-    content_length = metadata['content_length']
+  def upload(self, file, content_type, bucket_name, object_name):
+    file_size = os.fstat(file.fileno()).st_size
+    resource_url = f'{self.base_url}/{bucket_name}/{object_name}'
 
-    if task_id is None:
-      object_name = f'{job_id}/{filename}'
-    else:
-      object_name = f'{job_id}/{task_id}/{filename}'
-
-    protocol = 'https' if self.secure_domain else 'http'
-    resource_url = f'{protocol}://{self.domain}/{bucket_name}/{object_name}'
-
-    self.client.put_object(bucket_name, object_name, data, content_length, content_type)
+    self.client.put_object(bucket_name, object_name, file, file_size, content_type)
 
     result = {
-      'metadata': metadata,
+      'bucket_name': bucket_name,
+      'object_name': object_name,
+      'resource_url': resource_url
+    }
+
+    return result
+
+  def remove(self, bucket_name, object_name):
+    resource_url = f'{self.base_url}/{bucket_name}/{object_name}'
+
+    self.client.remove_object(bucket_name, object_name)
+
+    result = {
+      'bucket_name': bucket_name,
+      'object_name': object_name,
       'resource_url': resource_url
     }
 

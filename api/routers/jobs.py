@@ -2,30 +2,49 @@ from typing import Optional
 
 from fastapi import APIRouter, Request, WebSocket, File, UploadFile
 
-from models import ObjectID, ErrorResponse, JobRequest, JobResponse
-from controllers import authentication as auth, jobs
+import exceptions
+from models import ObjectID, Action, ErrorResponse, JobRequest, JobResponse
+from controllers import jobs
 
 
 router = APIRouter()
 
 responses = {
-  403: {'model': ErrorResponse}
+  exceptions.invalid_container_name.status_code: {'model': ErrorResponse}
 }
 
-@router.post('/', response_model = JobResponse, response_model_exclude_unset = True)
+@router.post('/', response_model = JobResponse, responses = responses, response_model_exclude_unset = True)
 def submit_job(request: Request, job: JobRequest):
-  return jobs.submit(request.state.context, job)
+  return jobs.submit(request.app.state.context, job)
 
-@router.post('/{job_id}/upload', response_model = JobResponse, response_model_exclude_unset = True)
+responses = {
+  exceptions.invalid_resource_id.status_code: {'model': ErrorResponse},
+  exceptions.invalid_job_action('update', 'some').status_code: {'model': ErrorResponse},
+  exceptions.invalid_scene_resource.status_code: {'model': ErrorResponse}
+}
+
+@router.post('/{job_id}', response_model = JobResponse, responses = responses, response_model_exclude_unset = True)
+def update_job_state(request: Request, job_id: ObjectID, action: Action):
+  return jobs.update(request.app.state.context, job_id, action)
+
+responses = {
+  exceptions.invalid_resource_id.status_code: {'model': ErrorResponse},
+  exceptions.invalid_resource_state('some').status_code: {'model': ErrorResponse},
+  exceptions.invalid_file_format.status_code: {'model': ErrorResponse}
+}
+
+@router.post('/{job_id}/scene', response_model = JobResponse, responses = responses, response_model_exclude_unset = True)
 def upload_job_scene(request: Request, job_id: ObjectID, scene: UploadFile = File(...)):
-  return jobs.upload_scene(request.state.context, job_id, scene)
+  return jobs.upload_scene(request.app.state.context, job_id, scene)
+
+responses = {
+  exceptions.invalid_resource_id.status_code: {'model': ErrorResponse}
+}
 
 @router.get('/{job_id}', response_model = JobResponse, responses = responses, response_model_exclude_unset = True)
-def get_job_by_id(
-    request: Request, job_id: ObjectID, task_id: Optional[ObjectID] = None,
-    api_key: auth.APIKey = auth.get_api_key()):
-  return jobs.get(request.state.context, job_id, task_id)
+def get_job_by_id(request: Request, job_id: ObjectID, task_id: Optional[ObjectID] = None):
+  return jobs.get(request.app.state.context, job_id, task_id)
 
 @router.websocket('/{job_id}/ws')
-def listen_job_by_id(websocket: WebSocket, job_id: ObjectID):
-  jobs.listen(websocket.state.context, job_id)
+async def listen_job_by_id(websocket: WebSocket, job_id: ObjectID):
+  await jobs.listen(websocket.app.state.context, websocket, job_id)

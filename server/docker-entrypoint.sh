@@ -16,8 +16,8 @@ variables='${SERVER_PORT}
           ${STORAGE_DOMAIN}
           ${STORAGE_HOSTNAME}
           ${STORAGE_PORT}
-          ${QUEUE_HOSTNAME}
-          ${QUEUE_PORT}'
+          ${TASK_QUEUE_HOSTNAME}
+          ${TASK_QUEUE_PORT}'
 
 envsubst "$variables" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class JobState(str, Enum):
+class State(str, Enum):
   ready = 'ready'
   running = 'running'
   done = 'done'

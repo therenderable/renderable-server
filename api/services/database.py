@@ -1,6 +1,6 @@
 import pymongo
 
-from models import DeviceDocument
+from models import ContainerDocument, DeviceDocument, JobDocument, TaskDocument
 
 
 class Database:
@@ -14,11 +14,24 @@ class Database:
       self.hostname, int(self.port), username = self.username, password = self.password)
     self.db = self.client['db']
 
-  def find(self, document_id, collection_name):
-    collection = self.db[collection_name]
-    document = collection.find_one(document_id)
+    self.models = {
+      'containers': ContainerDocument,
+      'devices': DeviceDocument,
+      'jobs': JobDocument,
+      'tasks': TaskDocument
+    }
 
-    return DeviceDocument(**document)
+  def find(self, document_query, collection_name):
+    collection = self.db[collection_name]
+    document = collection.find_one(document_query)
+
+    return document if document is None else self.models[collection_name](**document)
+
+  def find_many(self, document_query, collection_name):
+    collection = self.db[collection_name]
+    documents = collection.find(document_query)
+
+    return [self.models[collection_name](**document) for document in documents]
 
   def save(self, document, collection_name):
     collection = self.db[collection_name]
@@ -28,6 +41,12 @@ class Database:
 
   def save_many(self, documents, collection_name):
     collection = self.db[collection_name]
-    collection.insertMany([document.dict(by_alias = True) for document in documents])
+    collection.insert_many([document.dict(by_alias = True) for document in documents])
 
     return documents
+
+  def update(self, document_query, document, collection_name):
+    collection = self.db[collection_name]
+    collection.update_one(document_query, {'$set': document.dict(by_alias = True)})
+
+    return document

@@ -5,62 +5,70 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from services import Configuration, Cluster, Database, Storage, Queue
-from middlewares import RequestContext
+from services import Configuration, Cluster, Database, Storage, TaskQueue, StateQueue
 from routers import api
 
 
-config = Configuration(Path('/run/secrets/'))
+configuration = Configuration(Path('/run/secrets/'))
 
-cluster_secrets = { name: config.get(name) for name in ['API_ACCESS_KEY', 'QUEUE_USERNAME', 'QUEUE_PASSWORD'] }
-secure = config.get('API_SECURE') == 'true'
+api_version = configuration.get('API_VERSION')
+api_production = configuration.get('API_PRODUCTION') == 'on'
+api_workers = int(configuration.get('API_WORKERS'))
+api_hostname = configuration.get('API_HOSTNAME')
+api_port = int(configuration.get('API_PORT'))
+
+cluster_secrets = { name: configuration.get(name) for name in ['API_ACCESS_KEY', 'QUEUE_USERNAME', 'QUEUE_PASSWORD'] }
 
 cluster = Cluster(
-  config.get('CLUSTER_DOMAIN_IP'),
-  config.get('CLUSTER_HOSTNAME'),
-  config.get('CLUSTER_PORT'),
-  config.get('CLUSTER_MANAGER_PORT'),
-  Path(config.get('CLUSTER_CERTIFICATE_PATH')),
-  config.get('REGISTRY_DOMAIN'),
-  secure,
-  config.get('REGISTRY_USERNAME'),
-  config.get('REGISTRY_PASSWORD'),
+  configuration.get('CLUSTER_DOMAIN_IP'),
+  configuration.get('CLUSTER_HOSTNAME'),
+  configuration.get('CLUSTER_PORT'),
+  configuration.get('CLUSTER_MANAGER_PORT'),
+  Path(configuration.get('CLUSTER_CERTIFICATE_PATH')),
+  configuration.get('REGISTRY_DOMAIN'),
+  api_production,
+  configuration.get('REGISTRY_USERNAME'),
+  configuration.get('REGISTRY_PASSWORD'),
   cluster_secrets)
 
 database = Database(
-  config.get('DATABASE_HOSTNAME'),
-  config.get('DATABASE_PORT'),
-  config.get('DATABASE_USERNAME'),
-  config.get('DATABASE_PASSWORD'))
+  configuration.get('DATABASE_HOSTNAME'),
+  configuration.get('DATABASE_PORT'),
+  configuration.get('DATABASE_USERNAME'),
+  configuration.get('DATABASE_PASSWORD'))
 
 storage = Storage(
-  config.get('STORAGE_DOMAIN'),
-  secure,
-  config.get('STORAGE_HOSTNAME'),
-  config.get('STORAGE_PORT'),
-  config.get('STORAGE_ACCESS_KEY'),
-  config.get('STORAGE_SECRET_KEY'))
+  configuration.get('STORAGE_DOMAIN'),
+  api_production,
+  configuration.get('STORAGE_HOSTNAME'),
+  configuration.get('STORAGE_PORT'),
+  configuration.get('STORAGE_ACCESS_KEY'),
+  configuration.get('STORAGE_SECRET_KEY'))
 
-queue = Queue(
-  config.get('QUEUE_HOSTNAME'),
-  config.get('QUEUE_PORT'),
-  config.get('QUEUE_USERNAME'),
-  config.get('QUEUE_PASSWORD'))
+task_queue = TaskQueue(
+  configuration.get('TASK_QUEUE_HOSTNAME'),
+  configuration.get('TASK_QUEUE_PORT'),
+  configuration.get('TASK_QUEUE_USERNAME'),
+  configuration.get('TASK_QUEUE_PASSWORD'))
+
+state_queue = StateQueue(
+  configuration.get('STATE_QUEUE_HOSTNAME'),
+  configuration.get('STATE_QUEUE_PORT'),
+  configuration.get('STATE_QUEUE_USERNAME'),
+  configuration.get('STATE_QUEUE_PASSWORD'))
 
 context = {
-  'config': config,
+  'configuration': configuration,
   'cluster': cluster,
   'database': database,
   'storage': storage,
-  'queue': queue
+  'task_queue': task_queue,
+  'state_queue': state_queue
 }
 
-api_version = config.get('API_VERSION')
-
-api_hostname = config.get('API_HOSTNAME')
-api_port = config.get('API_PORT')
-
 app = FastAPI(redoc_url = None)
+
+app.state.context = context
 
 app.add_middleware(
   CORSMiddleware,
@@ -69,10 +77,10 @@ app.add_middleware(
   allow_headers = ['*'],
   allow_credentials = True)
 
-app.add_middleware(RequestContext, context = context)
-
 app.include_router(api.router, prefix = f'/{api_version}')
 
 
 if __name__ == '__main__':
-  uvicorn.run(app, host = api_hostname or '0.0.0.0', port = api_port)
+  uvicorn.run(
+    'main:app', host = api_hostname or '0.0.0.0', port = api_port,
+    workers = api_workers, debug = not api_production)

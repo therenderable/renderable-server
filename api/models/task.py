@@ -1,30 +1,35 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field, HttpUrl
 
-from . import ObjectID, JobState, Base, FrameRange
+from . import ObjectID, State, Base, FrameRange
 
 
 class TaskDocument(Base):
   id: ObjectID = Field(default_factory = ObjectID, alias = '_id')
   job_id: ObjectID = Field(...)
   frame_range: FrameRange = Field(...)
-  status: JobState = Field(...)
-  image_url: Optional[HttpUrl] = None
+  state: State = Field(...)
+  image_urls: List[HttpUrl] = []
   created_at: datetime = Field(default_factory = datetime.now)
   updated_at: datetime = Field(default_factory = datetime.now)
 
 
+class TaskMessage(Base):
+  id: ObjectID = Field(...)
+  job_id: ObjectID = Field(...)
+
+
 class TaskRequest(Base):
-  status: JobState = JobState.done
+  state: State = Field(...)
 
 
 class TaskResponse(Base):
   id: ObjectID = Field(...)
   frame_range: FrameRange = Field(...)
-  status: JobState = Field(...)
-  image_url: Optional[HttpUrl] = None
+  state: State = Field(...)
+  image_urls: List[HttpUrl] = Field(...)
   created_at: datetime = Field(...)
   updated_at: datetime = Field(...)
   job: Optional['JobResponse'] = None
