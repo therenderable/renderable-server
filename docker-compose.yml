@@ -21,10 +21,18 @@ secrets:
     file: secrets/storage_access_key
   storage_secret_key:
     file: secrets/storage_secret_key
+  container_queue_username:
+    file: secrets/container_queue_username
+  container_queue_password:
+    file: secrets/container_queue_password
   task_queue_username:
     file: secrets/task_queue_username
   task_queue_password:
     file: secrets/task_queue_password
+  resource_queue_username:
+    file: secrets/resource_queue_username
+  resource_queue_password:
+    file: secrets/resource_queue_password
   state_queue_username:
     file: secrets/state_queue_username
   state_queue_password:
@@ -81,8 +89,12 @@ services:
       - STORAGE_DOMAIN
       - STORAGE_HOSTNAME
       - STORAGE_PORT
+      - CONTAINER_QUEUE_HOSTNAME
+      - CONTAINER_QUEUE_PORT
       - TASK_QUEUE_HOSTNAME
       - TASK_QUEUE_PORT
+      - RESOURCE_QUEUE_HOSTNAME
+      - RESOURCE_QUEUE_PORT
       - STATE_QUEUE_HOSTNAME
       - STATE_QUEUE_PORT
     secrets:
@@ -93,8 +105,12 @@ services:
       - database_password
       - storage_access_key
       - storage_secret_key
+      - container_queue_username
+      - container_queue_password
       - task_queue_username
       - task_queue_password
+      - resource_queue_username
+      - resource_queue_password
       - state_queue_username
       - state_queue_password
     volumes:
@@ -104,7 +120,9 @@ services:
       - registry
       - database
       - storage
+      - container_queue
       - task_queue
+      - resource_queue
       - state_queue
     restart: unless-stopped
   cluster:
@@ -195,6 +213,21 @@ services:
       - storage:/data/
     command: 'minio server --address :${STORAGE_PORT} /data/'
     restart: unless-stopped
+  container_queue:
+    image: rabbitmq:3.8-management
+    hostname: ${CONTAINER_QUEUE_HOSTNAME}
+    expose:
+      - '${CONTAINER_QUEUE_PORT}'
+    environment:
+      - RABBITMQ_NODE_PORT=${CONTAINER_QUEUE_PORT}
+      - RABBITMQ_DEFAULT_USER_FILE=/run/secrets/container_queue_username
+      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/container_queue_password
+    secrets:
+      - container_queue_username
+      - container_queue_password
+    volumes:
+      - container_queue:/data/
+    restart: unless-stopped
   task_queue:
     image: rabbitmq:3.8-management
     hostname: ${TASK_QUEUE_HOSTNAME}
@@ -209,6 +242,21 @@ services:
       - task_queue_password
     volumes:
       - task_queue:/data/
+    restart: unless-stopped
+  resource_queue:
+    image: rabbitmq:3.8-management
+    hostname: ${RESOURCE_QUEUE_HOSTNAME}
+    expose:
+      - '${RESOURCE_QUEUE_PORT}'
+    environment:
+      - RABBITMQ_NODE_PORT=${RESOURCE_QUEUE_PORT}
+      - RABBITMQ_DEFAULT_USER_FILE=/run/secrets/resource_queue_username
+      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/resource_queue_password
+    secrets:
+      - resource_queue_username
+      - resource_queue_password
+    volumes:
+      - resource_queue:/data/
     restart: unless-stopped
   state_queue:
     image: rabbitmq:3.8-management
@@ -233,5 +281,7 @@ volumes:
   cache:
   database:
   storage:
+  container_queue:
   task_queue:
+  resource_queue:
   state_queue:
