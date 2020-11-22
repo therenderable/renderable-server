@@ -43,7 +43,7 @@ def submit(context, job):
 
   return JobResponse(**job_document.dict(), tasks = task_responses)
 
-def update(context, job_id, action):
+def update(context, job_id, job):
   cluster = context['cluster']
   database = context['database']
   container_queue = context['container_queue']
@@ -58,9 +58,9 @@ def update(context, job_id, action):
   task_documents = database.find_many({'_id': {'$in': job_document.task_ids}}, 'tasks')
   task_responses = [TaskResponse(**task_document.dict()) for task_document in task_documents]
 
-  if action == Action.start:
+  if job.action == Action.start:
     if job_document.state != State.ready:
-      raise exceptions.invalid_job_action(action, job_document.state)
+      raise exceptions.invalid_job_action(job.action, job_document.state)
 
     if job_document.scene_url is None:
       raise exceptions.invalid_scene_resource
@@ -73,7 +73,7 @@ def update(context, job_id, action):
 
     job_document.state = State.running
   else:
-    raise exceptions.invalid_job_action(action, job_document.state)
+    raise exceptions.invalid_job_action(job.action, job_document.state)
 
   job_document.updated_at = datetime.now()
 
@@ -171,7 +171,7 @@ async def listen(context, websocket, job_id):
         await utils.run_as_async(state_queue.publish, JobMessage(), job_id)
         break
 
-  async def process_message(channel, job_message):
+  async def process_message(channel, method, job_message):
     try:
       if job_message.id is None:
         assert await is_websocket_active()
@@ -190,8 +190,8 @@ async def listen(context, websocket, job_id):
       channel.stop_consuming()
       channel.connection.close()
 
-  def callback(channel, job_message):
-    utils.run_as_sync(process_message(channel, job_message), loop)
+  def callback(channel, method, job_message):
+    utils.run_as_sync(process_message(channel, method, job_message), loop)
 
   await websocket.accept()
 

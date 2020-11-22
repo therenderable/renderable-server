@@ -52,8 +52,11 @@ def update(context, task_id, task):
 
       resource_queue.publish([resource_message], 'packing')
   else:
-    if task.state == State.running:
-      if task_document.state != State.ready:
+    if task.state == State.ready:
+      if task_document.state != State.running:
+        raise exceptions.invalid_task_state(task_document.state, task.state)
+    elif task.state == State.running:
+      if task_document.state not in [State.ready, State.running]:
         raise exceptions.invalid_task_state(task_document.state, task.state)
     elif task.state == State.error:
       if task_document.state not in [State.ready, State.running]:

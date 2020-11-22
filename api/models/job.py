@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import Field, HttpUrl
 
-from . import ObjectID, State, Base, FrameRange
+from . import ObjectID, State, Action, Base, FrameRange
 
 
 class JobDocument(Base):
@@ -14,7 +14,7 @@ class JobDocument(Base):
   frame_range: FrameRange = Field(...)
   state: State = Field(...)
   scene_url: Optional[HttpUrl] = None
-  images_url: Optional[HttpUrl] = None
+  sequence_url: Optional[HttpUrl] = None
   created_at: datetime = Field(default_factory = datetime.now)
   updated_at: datetime = Field(default_factory = datetime.now)
 
@@ -30,6 +30,10 @@ class JobRequest(Base):
   frame_range: FrameRange = Field(...)
 
 
+class JobActionRequest(Base):
+  action: Action = Field(...)
+
+
 class JobResponse(Base):
   id: ObjectID = Field(...)
   parallelism: int = Field(..., gt = 0, le = 64)
@@ -37,7 +41,7 @@ class JobResponse(Base):
   frame_range: FrameRange = Field(...)
   state: State = Field(...)
   scene_url: Optional[HttpUrl] = Field(...)
-  images_url: Optional[HttpUrl] = Field(...)
+  sequence_url: Optional[HttpUrl] = Field(...)
   created_at: datetime = Field(...)
   updated_at: datetime = Field(...)
   tasks: Optional[List['TaskResponse']] = None

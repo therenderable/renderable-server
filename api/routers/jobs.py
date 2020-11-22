@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Request, WebSocket, File, UploadFile
 
 import exceptions
-from models import ObjectID, Action, ErrorResponse, JobRequest, JobResponse
+from models import ObjectID, Action, ErrorResponse, JobRequest, JobActionRequest, JobResponse
 from controllers import jobs
 
 
@@ -24,8 +24,8 @@ responses = {
 }
 
 @router.post('/{job_id}', response_model = JobResponse, responses = responses, response_model_exclude_unset = True)
-def update_job_state(request: Request, job_id: ObjectID, action: Action):
-  return jobs.update(request.app.state.context, job_id, action)
+def update_job_state(request: Request, job_id: ObjectID, job: JobActionRequest):
+  return jobs.update(request.app.state.context, job_id, job)
 
 responses = {
   exceptions.invalid_resource_id.status_code: {'model': ErrorResponse},

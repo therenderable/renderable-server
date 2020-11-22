@@ -4,7 +4,7 @@ LABEL description "Renderable resource worker."
 LABEL version "1.0.0"
 LABEL maintainer "Danilo Peixoto <danilo@therenderable.com>"
 
-WORKDIR /usr/src/worker/
+WORKDIR /usr/src/resource-worker/
 COPY . .
 
 RUN pip3 install --upgrade pip

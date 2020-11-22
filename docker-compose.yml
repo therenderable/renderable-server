@@ -125,6 +125,34 @@ services:
       - resource_queue
       - state_queue
     restart: unless-stopped
+  resource_worker:
+    build: resource-worker/
+    environment:
+      - API_PRODUCTION
+      - DATABASE_HOSTNAME
+      - DATABASE_PORT
+      - STORAGE_DOMAIN
+      - STORAGE_HOSTNAME
+      - STORAGE_PORT
+      - RESOURCE_QUEUE_HOSTNAME
+      - RESOURCE_QUEUE_PORT
+      - STATE_QUEUE_HOSTNAME
+      - STATE_QUEUE_PORT
+    secrets:
+      - database_username
+      - database_password
+      - storage_access_key
+      - storage_secret_key
+      - resource_queue_username
+      - resource_queue_password
+      - state_queue_username
+      - state_queue_password
+    depends_on:
+      - database
+      - storage
+      - resource_queue
+      - state_queue
+    restart: unless-stopped
   cluster:
     image: docker:19.03.12-dind
     hostname: ${CLUSTER_HOSTNAME}

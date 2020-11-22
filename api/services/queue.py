@@ -17,7 +17,7 @@ class Queue:
   def _wrap_callback(self, callback, model):
     def on_message_callback(channel, method, properties, body):
       message = model(**json.loads(body.decode()))
-      callback(channel, message)
+      callback(channel, method, message)
 
     return on_message_callback
 

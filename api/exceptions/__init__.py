@@ -12,10 +12,10 @@ image_resource_mismatch = HTTPException(status_code = status.HTTP_400_BAD_REQUES
 job_not_running = HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = 'Task parent job is not running')
 
 def invalid_resource_state(state):
-  return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f'Cannot update resource in {state} state')
+  return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f'Cannot update resource in "{state}" state')
 
 def invalid_job_action(action, state):
-  return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f'Cannot {action} job in {state} state')
+  return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f'Cannot "{action}" job in "{state}" state')
 
 def invalid_task_state(source_state, target_state):
-  return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f'Cannot update the task state from {source_state} to {target_state}')
+  return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = f'Cannot transition task state from "{source_state}" to "{target_state}"')

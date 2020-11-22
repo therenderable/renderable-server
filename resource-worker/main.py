@@ -1,35 +1,15 @@
+from datetime import datetime
 from pathlib import Path
+import functools
 
-import uvicorn
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from services import Configuration, Cluster, Database, Storage, WorkQueue, EventQueue
-from routers import api
+import utils
+from models import ResourceMessage, JobMessage
+from services import Configuration, Database, Storage, WorkQueue, EventQueue
 
 
 configuration = Configuration(Path('/run/secrets/'))
 
-api_version = configuration.get('API_VERSION')
 api_production = configuration.get('API_PRODUCTION') == 'on'
-api_workers = int(configuration.get('API_WORKERS'))
-api_hostname = configuration.get('API_HOSTNAME')
-api_port = int(configuration.get('API_PORT'))
-
-cluster_secrets = { name: configuration.get(name) for name in ['API_ACCESS_KEY', 'QUEUE_USERNAME', 'QUEUE_PASSWORD'] }
-
-cluster = Cluster(
-  configuration.get('CLUSTER_DOMAIN_IP'),
-  configuration.get('CLUSTER_HOSTNAME'),
-  configuration.get('CLUSTER_PORT'),
-  configuration.get('CLUSTER_MANAGER_PORT'),
-  Path(configuration.get('CLUSTER_CERTIFICATE_PATH')),
-  configuration.get('REGISTRY_DOMAIN'),
-  api_production,
-  configuration.get('REGISTRY_USERNAME'),
-  configuration.get('REGISTRY_PASSWORD'),
-  cluster_secrets)
 
 database = Database(
   configuration.get('DATABASE_HOSTNAME'),
@@ -45,18 +25,6 @@ storage = Storage(
   configuration.get('STORAGE_ACCESS_KEY'),
   configuration.get('STORAGE_SECRET_KEY'))
 
-container_queue = WorkQueue(
-  configuration.get('CONTAINER_QUEUE_HOSTNAME'),
-  configuration.get('CONTAINER_QUEUE_PORT'),
-  configuration.get('CONTAINER_QUEUE_USERNAME'),
-  configuration.get('CONTAINER_QUEUE_PASSWORD'))
-
-task_queue = WorkQueue(
-  configuration.get('TASK_QUEUE_HOSTNAME'),
-  configuration.get('TASK_QUEUE_PORT'),
-  configuration.get('TASK_QUEUE_USERNAME'),
-  configuration.get('TASK_QUEUE_PASSWORD'))
-
 resource_queue = WorkQueue(
   configuration.get('RESOURCE_QUEUE_HOSTNAME'),
   configuration.get('RESOURCE_QUEUE_PORT'),
@@ -69,32 +37,51 @@ state_queue = EventQueue(
   configuration.get('STATE_QUEUE_USERNAME'),
   configuration.get('STATE_QUEUE_PASSWORD'))
 
-context = {
-  'configuration': configuration,
-  'cluster': cluster,
-  'database': database,
-  'storage': storage,
-  'container_queue': container_queue,
-  'task_queue': task_queue,
-  'resource_queue': resource_queue,
-  'state_queue': state_queue
-}
 
-app = FastAPI(redoc_url = None)
+def callback(channel, method, resource_message):
+  try:
+    job_document = database.find(resource_message.job_id, 'jobs')
+    task_documents = database.find_many({'_id': {'$in': job_document.task_ids}}, 'tasks')
 
-app.state.context = context
+    def format_resource(resource_url):
+      bucket_name, object_name_prefix, filename = resource_url.split('/')[-3:]
 
-app.add_middleware(
-  CORSMiddleware,
-  allow_origins = ['*'],
-  allow_methods = ['*'],
-  allow_headers = ['*'],
-  allow_credentials = True)
+      return {
+        'bucket_name': bucket_name,
+        'object_name': f'{object_name_prefix}/{filename}',
+        'filename': filename
+      }
 
-app.include_router(api.router, prefix = f'/{api_version}')
+    def resolve_resources(resources, task):
+      resource_list = list(map(format_resource, task.image_urls))
+      resources.extend(resource_list)
+
+      return resources
+
+    def download_resource(resource):
+      result = storage.download(resource['bucket_name'], resource['object_name'])
+
+      return resource['filename'], result['data']
+
+    resources = functools.reduce(resolve_resources, task_documents, [])
+
+    files = list(map(download_resource, resources))
+    zip_data = utils.compress_files(files)
+
+    result = storage.upload(zip_data, 'application/zip', 'sequences', f'{job_document.id}/sequence.zip')
+
+    job_document.sequence_url = result['resource_url']
+    job_document.state = resource_message.job_state
+    job_document.updated_at = datetime.now()
+
+    database.update({ '_id': job_document.id }, job_document, 'jobs')
+
+    state_queue.publish(JobMessage(**job_document.dict()), job_document.id)
+
+    channel.basic_ack(delivery_tag = method.delivery_tag)
+  except:
+    channel.basic_nack(delivery_tag = method.delivery_tag)
 
 
 if __name__ == '__main__':
-  uvicorn.run(
-    'main:app', host = api_hostname or '0.0.0.0', port = api_port,
-    workers = api_workers, debug = not api_production)
+  resource_queue.consume(callback, 'packing', ResourceMessage)
