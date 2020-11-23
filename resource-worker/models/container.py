@@ -16,7 +16,8 @@ class ContainerDocument(Base):
 
 class ContainerMessage(Base):
   name: str = Field(...)
-  replicas: int = Field(..., gt = 0)
+  task_count: int = Field(..., gt = 0)
+  upscaling: bool = Field(...)
 
 
 class ContainerRequest(Base):

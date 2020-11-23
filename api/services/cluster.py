@@ -6,7 +6,7 @@ import docker
 
 class ClusterStatus(int, Enum):
   node_already_initialized = 503
-  secret_already_exists = 409
+  resource_already_exists = 409
 
 
 class Cluster:
@@ -39,6 +39,7 @@ class Cluster:
     self._drain_manager()
     self._register_secrets()
     self._login_registry()
+    self._create_services()
 
   def _initialize(self):
     try:
@@ -64,20 +65,38 @@ class Cluster:
     node.update(request)
 
   def _register_secrets(self):
-    try:
-      for name, data in self.secrets.items():
-        secret = {
-          'name': name.lower(),
-          'data': data.encode('utf-8')
-        }
+    for name, data in self.secrets.items():
+      secret = {
+        'name': name.lower(),
+        'data': data.encode('utf-8')
+      }
 
+      try:
         self.client.secrets.create(**secret)
-    except docker.errors.APIError as error:
-      if error.status_code != ClusterStatus.secret_already_exists:
-        raise error
+      except docker.errors.APIError as error:
+        if error.status_code != ClusterStatus.resource_already_exists:
+          raise error
 
   def _login_registry(self):
     self.client.login(self.registry_username, self.registry_password, registry = self.registry_base_url)
+
+  def _create_services(self):
+    container_names = self.get_container_names()
+    secrets = [docker.types.SecretReference(secret.id, secret.name) for secret in self.client.secrets.list()]
+
+    for name in container_names:
+      service = {
+        'name': name,
+        'image': f'{self.registry_domain}/acme/{name}:latest',
+        'mode': docker.types.ServiceMode(mode = 'replicated', replicas = 0),
+        'secrets': secrets
+      }
+
+      try:
+        self.client.services.create(**service)
+      except docker.errors.APIError as error:
+        if error.status_code != ClusterStatus.resource_already_exists:
+          raise error
 
   def get_container_names(self):
     request = requests.get(f'{self.registry_base_url}/_catalog', auth = (self.registry_username, self.registry_password))
@@ -92,14 +111,3 @@ class Cluster:
     node_type = device['node_type'].capitalize()
 
     return self.client.swarm.attrs['JoinTokens'][node_type]
-
-  def scale(self, container_name, replicas):
-    pass
-    # total_nodes: get total number active worker nodes
-    # total_containers: get total number active containers
-    # total_containers_x: get total number active containers for x type
-    # alocation = max(0, 4 * total_nodes - total_containers)
-    # if allocation > 0:
-    #     run min(allocation, replicas) N services for container x type
-    # else
-    #     assert total_containers_x > replicas / 2

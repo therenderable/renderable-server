@@ -117,13 +117,33 @@ services:
       - cluster_certificate:/etc/ssl/certs/cluster/
     depends_on:
       - cluster
-      - registry
       - database
       - storage
       - container_queue
       - task_queue
       - resource_queue
       - state_queue
+    restart: unless-stopped
+  container_worker:
+    build: container-worker/
+    environment:
+      - CLUSTER_MAXIMUM_TASKS_PER_WORKER
+      - CLUSTER_HOSTNAME
+      - CLUSTER_PORT
+      - CLUSTER_CERTIFICATE_PATH=/etc/ssl/certs/cluster/
+      - DATABASE_HOSTNAME
+      - DATABASE_PORT
+      - CONTAINER_QUEUE_HOSTNAME
+      - CONTAINER_QUEUE_PORT
+    secrets:
+      - database_username
+      - database_password
+      - container_queue_username
+      - container_queue_password
+    volumes:
+      - cluster_certificate:/etc/ssl/certs/cluster/
+    depends_on:
+      - api
     restart: unless-stopped
   resource_worker:
     build: resource-worker/
@@ -148,10 +168,7 @@ services:
       - state_queue_username
       - state_queue_password
     depends_on:
-      - database
-      - storage
-      - resource_queue
-      - state_queue
+      - api
     restart: unless-stopped
   cluster:
     image: docker:19.03.12-dind
@@ -167,6 +184,8 @@ services:
       - cluster:/var/lib/docker/
       - cluster_certificate:/certs/client/
     command: '--insecure-registry=${CLUSTER_INSECURE_REGISTRY}'
+    depends_on:
+      - registry
     restart: unless-stopped
   registry:
     image: registry:2.7

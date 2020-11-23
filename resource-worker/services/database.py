@@ -55,3 +55,9 @@ class Database:
     collection.update_one(document_query, {'$set': document.dict(by_alias = True)})
 
     return document
+
+  def compute(self, pipeline_query, collection_name, model):
+    collection = self.db[collection_name]
+    documents = collection.aggregate(pipeline_query)
+
+    return [model(**document) for document in documents]

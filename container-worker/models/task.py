@@ -18,7 +18,7 @@ class TaskDocument(Base):
 
 
 class TaskCountDocument(Base):
-  container_name: str = Field(...)
+  container_name: Optional[str] = None
   count: int = Field(..., ge = 0)
 
 

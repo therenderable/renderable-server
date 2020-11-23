@@ -8,7 +8,7 @@ def register(context, container):
 
   container_name = container.name
 
-  if container_name == 'renderable-box' or container_name not in cluster.get_container_names():
+  if container_name not in cluster.get_container_names():
     raise exceptions.invalid_container_name
 
   container_document = database.find({'name': container_name}, 'containers')

@@ -21,6 +21,7 @@ def submit(context, job):
   def create_task(group):
     return TaskDocument(
       job_id = job_id,
+      container_name = job.container_name,
       frame_range = FrameRange(start = group[0], end = group[len(group) - 1]),
       state = State.ready)
 
@@ -44,7 +45,6 @@ def submit(context, job):
   return JobResponse(**job_document.dict(), tasks = task_responses)
 
 def update(context, job_id, job):
-  cluster = context['cluster']
   database = context['database']
   container_queue = context['container_queue']
   task_queue = context['task_queue']
@@ -65,10 +65,14 @@ def update(context, job_id, job):
     if job_document.scene_url is None:
       raise exceptions.invalid_scene_resource
 
-    task_messages = [TaskMessage(**task_document.dict()) for task_document in task_documents]
-    container_message = ContainerMessage(name = job_document.container_name, replicas = len(task_messages))
+    container_message = ContainerMessage(
+      name = job_document.container_name,
+      task_count = len(job_document.task_ids),
+      upscaling = True)
 
-    container_queue.publish([container_message], 'scaling')
+    task_messages = [TaskMessage(**task_document.dict()) for task_document in task_documents]
+
+    container_queue.publish([container_message], 'autoscaling')
     task_queue.publish(task_messages, job_document.container_name)
 
     job_document.state = State.running

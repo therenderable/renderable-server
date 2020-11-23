@@ -4,12 +4,13 @@ import functools
 
 import utils
 import exceptions
-from models import State, ResourceMessage, JobMessage, JobResponse, TaskResponse
+from models import State, ResourceMessage, ContainerMessage, JobMessage, JobResponse, TaskResponse
 
 
 def update(context, task_id, task):
   storage = context['storage']
   database = context['database']
+  container_queue = context['container_queue']
   resource_queue = context['resource_queue']
   state_queue = context['state_queue']
 
@@ -36,6 +37,13 @@ def update(context, task_id, task):
 
     database.update({ '_id': task_id }, task_document, 'tasks')
 
+    container_message = ContainerMessage(
+      name = job_document.container_name,
+      task_count = len(job_document.task_ids),
+      upscaling = False)
+
+    container_queue.publish([container_message], 'autoscaling')
+
     document_query = {
       '_id': {'$in': job_document.task_ids},
       'state': {'$in': [State.ready, State.running]}
@@ -45,9 +53,10 @@ def update(context, task_id, task):
 
     if unresolved_task_count == 0:
       document_query['state'] = State.error
-      error_task_count = database.count(document_query, 'tasks')
 
+      error_task_count = database.count(document_query, 'tasks')
       job_state = State.error if error_task_count > 0 else State.done
+
       resource_message = ResourceMessage(job_id = job_document.id, job_state = job_state)
 
       resource_queue.publish([resource_message], 'packing')
