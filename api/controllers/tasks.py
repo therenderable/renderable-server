@@ -1,5 +1,4 @@
 from typing import List
-from datetime import datetime
 import functools
 
 import utils
@@ -33,7 +32,7 @@ def update(context, task_id, task):
       raise exceptions.invalid_image_resources
 
     task_document.state = task.state
-    task_document.updated_at = datetime.now()
+    task_document.updated_at = utils.utc_now()
 
     database.update({ '_id': task_id }, task_document, 'tasks')
 
@@ -74,7 +73,7 @@ def update(context, task_id, task):
       raise exceptions.invalid_task_state(task_document.state, task.state)
 
     task_document.state = task.state
-    task_document.updated_at = datetime.now()
+    task_document.updated_at = utils.utc_now()
 
     database.update({ '_id': task_id }, task_document, 'tasks')
 
@@ -140,7 +139,7 @@ def upload_images(context, task_id, images):
   resource_urls = list(map(upload_resource, resources))
 
   task_document.image_urls = resource_urls
-  task_document.updated_at = datetime.now()
+  task_document.updated_at = utils.utc_now()
 
   database.update({ '_id': task_id }, task_document, 'tasks')
 

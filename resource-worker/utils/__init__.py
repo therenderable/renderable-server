@@ -1,6 +1,10 @@
+import datetime
 from io import BytesIO
 from zipfile import ZipFile, ZipInfo
 
+
+def utc_now():
+  return datetime.datetime.now(datetime.timezone.utc)
 
 def compress_files(files):
   zip_data = BytesIO()

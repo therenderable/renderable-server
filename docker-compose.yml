@@ -77,6 +77,7 @@ services:
       - API_VERSION
       - API_PRODUCTION
       - API_WORKERS
+      - API_HEARTBEAT_PERIOD
       - API_PORT
       - CLUSTER_DOMAIN_IP
       - CLUSTER_HOSTNAME
@@ -127,17 +128,13 @@ services:
   container_worker:
     build: container-worker/
     environment:
-      - CLUSTER_MAXIMUM_TASKS_PER_WORKER
+      - CLUSTER_COOLDOWN_PERIOD
       - CLUSTER_HOSTNAME
       - CLUSTER_PORT
       - CLUSTER_CERTIFICATE_PATH=/etc/ssl/certs/cluster/
-      - DATABASE_HOSTNAME
-      - DATABASE_PORT
       - CONTAINER_QUEUE_HOSTNAME
       - CONTAINER_QUEUE_PORT
     secrets:
-      - database_username
-      - database_password
       - container_queue_username
       - container_queue_password
     volumes:

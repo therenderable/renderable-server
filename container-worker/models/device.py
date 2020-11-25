@@ -3,13 +3,14 @@ from typing import Optional
 
 from pydantic import Field
 
+import utils
 from . import ObjectID, NodeType, Base
 
 
 class DeviceDocument(Base):
   id: ObjectID = Field(default_factory = ObjectID, alias = '_id')
   node_type: NodeType = Field(...)
-  joined_at: datetime = Field(default_factory = datetime.now)
+  joined_at: datetime = Field(default_factory = utils.utc_now)
 
 
 class DeviceRequest(Base):

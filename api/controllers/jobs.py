@@ -1,4 +1,3 @@
-from datetime import datetime
 import asyncio
 
 import utils
@@ -21,7 +20,6 @@ def submit(context, job):
   def create_task(group):
     return TaskDocument(
       job_id = job_id,
-      container_name = job.container_name,
       frame_range = FrameRange(start = group[0], end = group[len(group) - 1]),
       state = State.ready)
 
@@ -79,7 +77,7 @@ def update(context, job_id, job):
   else:
     raise exceptions.invalid_job_action(job.action, job_document.state)
 
-  job_document.updated_at = datetime.now()
+  job_document.updated_at = utils.utc_now()
 
   database.update({ '_id': job_id }, job_document, 'jobs')
 
@@ -119,7 +117,7 @@ def upload_scene(context, job_id, scene):
   result = storage.upload(scene.file, content_type, 'scenes', f'{job_id}/scene{file_extension}')
 
   job_document.scene_url = result['resource_url']
-  job_document.updated_at = datetime.now()
+  job_document.updated_at = utils.utc_now()
 
   database.update({ '_id': job_id }, job_document, 'jobs')
 
@@ -148,9 +146,11 @@ def get(context, job_id, task_id = None):
   return JobResponse(**job_document.dict(), tasks = task_responses)
 
 async def listen(context, websocket, job_id):
+  configuration = context['configuration']
   database = context['database']
   state_queue = context['state_queue']
 
+  heartbeat_period = configuration.get('API_HEARTBEAT_PERIOD')
   loop = asyncio.get_event_loop()
 
   async def is_websocket_active():
@@ -169,7 +169,7 @@ async def listen(context, websocket, job_id):
   async def handle_connection():
     while True:
       try:
-        await asyncio.sleep(60)
+        await asyncio.sleep(heartbeat_period)
         assert await is_websocket_active()
       except:
         await utils.run_as_async(state_queue.publish, JobMessage(), job_id)

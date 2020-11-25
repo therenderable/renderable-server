@@ -3,6 +3,7 @@ from typing import Optional, List
 
 from pydantic import Field, HttpUrl
 
+import utils
 from . import ObjectID, State, Action, Base, FrameRange
 
 
@@ -15,8 +16,8 @@ class JobDocument(Base):
   state: State = Field(...)
   scene_url: Optional[HttpUrl] = None
   sequence_url: Optional[HttpUrl] = None
-  created_at: datetime = Field(default_factory = datetime.now)
-  updated_at: datetime = Field(default_factory = datetime.now)
+  created_at: datetime = Field(default_factory = utils.utc_now)
+  updated_at: datetime = Field(default_factory = utils.utc_now)
 
 
 class JobMessage(Base):

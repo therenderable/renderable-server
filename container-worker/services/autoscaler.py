@@ -1,13 +1,14 @@
+from datetime import datetime
+
 import docker
 
 
 class Autoscaler:
-  def __init__(self, hostname, port, certificate_path, average_tasks_per_worker, autoscale_threshold):
+  def __init__(self, hostname, port, certificate_path, cooldown_period):
     self.hostname = hostname
     self.port = port
     self.certificate_path = certificate_path
-    self.average_tasks_per_worker = average_tasks_per_worker
-    self.autoscale_threshold = autoscale_threshold
+    self.cooldown_period = cooldown_period
 
     public_certificate_path = str(self.certificate_path / 'cert.pem')
     private_certificate_path = str(self.certificate_path / 'key.pem')
@@ -17,56 +18,17 @@ class Autoscaler:
 
     self.client = docker.DockerClient(f'https://{self.hostname}:{self.port}', tls = tls_config)
 
-  def get_compute_capability(self):
-    def filter_by_ready_status(node):
-      return node.attrs['Status']['State'] == 'ready'
-
-    nodes = self.client.nodes.list(filters = {'role': 'worker'})
-    nodes = list(filter(filter_by_ready_status, nodes))
-
-    return len(nodes) * self.average_tasks_per_worker
-
-  def get_cluster_state(self):
-    def format_service(service):
-      name = service.attrs['Spec']['Name']
-      replicas = service.attrs['Spec']['Mode']['Replicated']['Replicas']
-
-      return name, replicas
-
-    return dict(format_service(service) for service in self.client.services.list())
-
-  def scale_service(self, container_name, replicas):
+  def scale(self, container_name, task_count, upscaling):
     service = self.client.services.get(container_name)
-    service.scale(replicas)
 
-  def scale(self, task_state):
-    import logging
+    last_updated_time = datetime.fromisoformat(service.attrs['UpdatedAt'][:26])
+    last_update_period = (datetime.utcnow() - last_updated_time).total_seconds()
 
-    try:
-      def normalize(state):
-        total_count = sum(state.values())
-        scale_factor = 1 / total_count if total_count > 0 else 0
+    assert last_update_period > self.cooldown_period
 
-        return {container_name: count * scale_factor for container_name, count in state.items()}
+    delta = task_count if upscaling else -task_count
 
-      def distance(state, target_state):
-        return {container_name: target_state[container_name] - factor for container_name, factor in state.items()}=
+    replicas = service.attrs['Spec']['Mode']['Replicated']['Replicas']
+    target_replicas = int(max(replicas + delta, 0))
 
-      task_state = normalize(task_state)
-
-      cluster_state = normalize(self.get_cluster_state())
-      target_state = {container_name: task_state.get(container_name, 0) for container_name in cluster_state.keys()}
-
-      error_state = distance(cluster_state, target_state)
-
-      capability = self.get_compute_capability()
-
-      for container_name, error in error_state.items():
-        squared_error = error * error
-
-        if squared_error > self.autoscale_threshold * self.autoscale_threshold:
-          self.scale_service(container_name, capability * int(max(target_state[container_name], 1)))
-
-
-    except Exception as e:
-      logging.error(e)
+    service.scale(target_replicas)

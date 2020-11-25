@@ -1,4 +1,4 @@
-# Renderable Core
+# Renderable Server
 
 Renderable web server.
 

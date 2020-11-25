@@ -84,11 +84,18 @@ class Cluster:
     container_names = self.get_container_names()
     secrets = [docker.types.SecretReference(secret.id, secret.name) for secret in self.client.secrets.list()]
 
+    resources = docker.types.Resources(
+      cpu_reservation = int(1 * 1e9),
+      cpu_limit = int(4 * 1e9),
+      mem_reservation = int(1 * 1e9),
+      mem_limit = int(4 * 1e9))
+
     for name in container_names:
       service = {
         'name': name,
-        'image': f'{self.registry_domain}/acme/{name}:latest',
+        'image': f'{self.registry_domain}/{name}:latest',
         'mode': docker.types.ServiceMode(mode = 'replicated', replicas = 0),
+        'resources': resources,
         'secrets': secrets
       }
 

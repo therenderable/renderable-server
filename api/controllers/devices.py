@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import exceptions
 from models import DeviceDocument, DeviceResponse
 

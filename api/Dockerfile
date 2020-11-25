@@ -1,6 +1,6 @@
 FROM python:3.7
 
-LABEL description "Renderable core API."
+LABEL description "Renderable web API."
 LABEL version "1.0.0"
 LABEL maintainer "Danilo Peixoto <danilo@therenderable.com>"
 

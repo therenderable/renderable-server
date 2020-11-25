@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 import functools
 
@@ -72,7 +71,7 @@ def callback(channel, method, resource_message):
 
     job_document.sequence_url = result['resource_url']
     job_document.state = resource_message.job_state
-    job_document.updated_at = datetime.now()
+    job_document.updated_at = utils.utc_now()
 
     database.update({ '_id': job_document.id }, job_document, 'jobs')
 

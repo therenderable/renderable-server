@@ -1,9 +1,13 @@
+import datetime
 from pathlib import Path
 import asyncio
 from functools import partial
 
 import numpy as np
 
+
+def utc_now():
+  return datetime.datetime.now(datetime.timezone.utc)
 
 def get_file_extension(filename):
   filename = Path(filename)
