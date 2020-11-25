@@ -104,6 +104,9 @@ def upload_images(context, task_id, images):
 
   container_document = database.find({'name': job_document.container_name}, 'containers')
 
+  def sort_by_filename(image):
+    return image.filename
+
   def resolve_resources(resources, frame):
     id, image = frame
 
@@ -134,6 +137,8 @@ def upload_images(context, task_id, images):
     result = storage.upload(resource['file'], resource['content_type'], 'images', f'{task_id}/{resource["filename"]}')
 
     return result['resource_url']
+
+  images = sorted(images, key = sort_by_filename)
 
   resources = functools.reduce(resolve_resources, enumerate(images, task_document.frame_range.start), [])
   resource_urls = list(map(upload_resource, resources))
