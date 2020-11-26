@@ -12,7 +12,8 @@ class ClusterStatus(int, Enum):
 class Cluster:
   def __init__(self,
       domain_ip, hostname, port, manager_port, certificate_path,
-      registry_domain, secure_registry_domain, registry_username, registry_password, secrets):
+      registry_domain, secure_registry_domain, registry_username, registry_password,
+      secrets, environment):
     self.domain_ip = domain_ip
     self.hostname = hostname
     self.port = port
@@ -23,6 +24,7 @@ class Cluster:
     self.registry_username = registry_username
     self.registry_password = registry_password
     self.secrets = secrets
+    self.environment = environment
 
     protocol = 'https' if self.secure_registry_domain else 'http'
     self.registry_base_url = f'{protocol}://{self.registry_domain}/v2'
@@ -82,7 +84,9 @@ class Cluster:
 
   def _create_services(self):
     container_names = self.get_container_names()
+
     secrets = [docker.types.SecretReference(secret.id, secret.name) for secret in self.client.secrets.list()]
+    environment_variables = [f'{name}={value}' for name, value in self.environment.items()]
 
     resources = docker.types.Resources(
       cpu_reservation = int(1 * 1e9),
@@ -96,7 +100,8 @@ class Cluster:
         'image': f'{self.registry_domain}/{name}:latest',
         'mode': docker.types.ServiceMode(mode = 'replicated', replicas = 0),
         'resources': resources,
-        'secrets': secrets
+        'secrets': secrets,
+        'env': environment_variables
       }
 
       try:
