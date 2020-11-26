@@ -79,7 +79,6 @@ services:
       - API_WORKERS
       - API_HEARTBEAT_PERIOD
       - API_PORT
-      - CLUSTER_DOMAIN
       - CLUSTER_DOMAIN_IP
       - CLUSTER_HOSTNAME
       - CLUSTER_PORT
