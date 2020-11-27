@@ -11,7 +11,10 @@ class Database:
     self.password = password
 
     self.client = pymongo.MongoClient(
-      self.hostname, int(self.port), username = self.username, password = self.password)
+      self.hostname, int(self.port),
+      username = self.username, password = self.password,
+      tz_aware = True)
+
     self.db = self.client['db']
 
     self.models = {
