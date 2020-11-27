@@ -18,11 +18,9 @@ def submit(context, job):
   frame_groups = utils.group_frames(job.frame_range.start, job.frame_range.end, job.parallelism)
 
   def create_task(group):
-    start, end = group[:: len(group) - 1]
-
     return TaskDocument(
       job_id = job_id,
-      frame_range = FrameRange(start = start, end = end),
+      frame_range = FrameRange(start = group[0], end = group[len(group) - 1]),
       state = State.ready,
       retries = 0)
 
