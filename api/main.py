@@ -17,10 +17,20 @@ api_workers = int(configuration.get('API_WORKERS'))
 api_hostname = configuration.get('API_HOSTNAME')
 api_port = int(configuration.get('API_PORT'))
 
-cluster_secret_variables = ['API_ACCESS_KEY', 'TASK_QUEUE_USERNAME', 'TASK_QUEUE_PASSWORD']
+cluster_secret_variables = [
+  'API_ACCESS_KEY',
+  'TASK_QUEUE_USERNAME',
+  'TASK_QUEUE_PASSWORD']
+
 cluster_secrets = { name: configuration.get(name) for name in cluster_secret_variables }
 
-cluster_environment_variables = ['API_DOMAIN', 'API_PRODUCTION', 'TASK_QUEUE_DOMAIN', 'TASK_QUEUE_PORT']
+cluster_environment_variables = [
+  'SERVER_PORT',
+  'API_DOMAIN',
+  'API_PRODUCTION',
+  'TASK_QUEUE_DOMAIN',
+  'TASK_QUEUE_PORT']
+
 cluster_environment = { name: configuration.get(name) for name in cluster_environment_variables }
 
 cluster = Cluster(
