@@ -151,7 +151,7 @@ async def listen(context, websocket, job_id):
   database = context['database']
   state_queue = context['state_queue']
 
-  heartbeat_period = configuration.get('API_HEARTBEAT_PERIOD')
+  heartbeat_period = int(configuration.get('API_HEARTBEAT_PERIOD'))
   loop = asyncio.get_event_loop()
 
   async def is_websocket_active():

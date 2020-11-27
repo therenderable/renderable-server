@@ -14,7 +14,7 @@ def update(context, task_id, task):
   resource_queue = context['resource_queue']
   state_queue = context['state_queue']
 
-  maximum_task_retries = configuration.get('API_MAXIMUM_TASK_RETRIES')
+  maximum_task_retries = int(configuration.get('API_MAXIMUM_TASK_RETRIES'))
 
   task_document = database.find(task_id, 'tasks')
 
