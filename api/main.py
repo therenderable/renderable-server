@@ -25,6 +25,7 @@ cluster_secret_variables = [
 cluster_secrets = { name: configuration.get(name) for name in cluster_secret_variables }
 
 cluster_environment = {
+  'API_VERSION': configuration.get('API_VERSION'),
   'API_SECURE': api_production,
   'API_HOSTNAME': configuration.get('API_DOMAIN'),
   'API_PORT': 443 if api_production else 80,
