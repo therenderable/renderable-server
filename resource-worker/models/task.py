@@ -12,6 +12,7 @@ class TaskDocument(Base):
   job_id: ObjectID = Field(...)
   frame_range: FrameRange = Field(...)
   state: State = Field(...)
+  retries: int = Field(..., ge = 0)
   image_urls: List[HttpUrl] = []
   created_at: datetime = Field(default_factory = utils.utc_now)
   updated_at: datetime = Field(default_factory = utils.utc_now)

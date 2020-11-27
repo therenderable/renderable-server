@@ -7,11 +7,14 @@ from models import State, ResourceMessage, ContainerMessage, JobMessage, JobResp
 
 
 def update(context, task_id, task):
+  configuration = context['configuration']
   storage = context['storage']
   database = context['database']
   container_queue = context['container_queue']
   resource_queue = context['resource_queue']
   state_queue = context['state_queue']
+
+  maximum_task_retries = configuration.get('API_MAXIMUM_TASK_RETRIES')
 
   task_document = database.find(task_id, 'tasks')
 
@@ -24,18 +27,7 @@ def update(context, task_id, task):
   if job_document.state != State.running:
     raise exceptions.job_not_running
 
-  if task.state == State.done:
-    if task_document.state != State.running:
-      raise exceptions.invalid_task_state(task_document.state, task.state)
-
-    if len(task_document.image_urls) == 0:
-      raise exceptions.invalid_image_resources
-
-    task_document.state = task.state
-    task_document.updated_at = utils.utc_now()
-
-    database.update({ '_id': task_id }, task_document, 'tasks')
-
+  def resolve_task():
     container_message = ContainerMessage(
       name = job_document.container_name,
       task_count = len(job_document.task_ids),
@@ -59,23 +51,38 @@ def update(context, task_id, task):
       resource_message = ResourceMessage(job_id = job_document.id, job_state = job_state)
 
       resource_queue.publish([resource_message], 'packing')
-  else:
-    if task.state == State.ready:
-      if task_document.state != State.running:
-        raise exceptions.invalid_task_state(task_document.state, task.state)
-    elif task.state == State.running:
-      if task_document.state not in [State.ready, State.running]:
-        raise exceptions.invalid_task_state(task_document.state, task.state)
-    elif task.state == State.error:
-      if task_document.state not in [State.ready, State.running]:
-        raise exceptions.invalid_task_state(task_document.state, task.state)
-    else:
+
+  if task.state == State.done:
+    if task_document.state != State.running:
       raise exceptions.invalid_task_state(task_document.state, task.state)
+
+    if len(task_document.image_urls) == 0:
+      raise exceptions.invalid_image_resources
 
     task_document.state = task.state
     task_document.updated_at = utils.utc_now()
 
     database.update({ '_id': task_id }, task_document, 'tasks')
+
+    resolve_task()
+  elif task.state == State.running:
+      if task_document.state not in [State.ready, State.running]:
+        raise exceptions.invalid_task_state(task_document.state, task.state)
+
+      if task_document.retries < maximum_task_retries:
+        task_document.state = task.state
+        task_document.retries = task_document.retries + 1
+      else:
+        task_document.state = State.error
+
+      task_document.updated_at = utils.utc_now()
+
+      database.update({ '_id': task_id }, task_document, 'tasks')
+
+      if task_document.state == State.error:
+        resolve_task()
+  else:
+    raise exceptions.invalid_task_state(task_document.state, task.state)
 
   state_queue.publish(JobMessage(**job_document.dict()), job_document.id)
 

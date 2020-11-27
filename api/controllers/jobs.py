@@ -23,7 +23,8 @@ def submit(context, job):
     return TaskDocument(
       job_id = job_id,
       frame_range = FrameRange(start = start, end = end),
-      state = State.ready)
+      state = State.ready,
+      retries = 0)
 
   def get_task_id(task):
     return task.id
