@@ -24,14 +24,13 @@ cluster_secret_variables = [
 
 cluster_secrets = { name: configuration.get(name) for name in cluster_secret_variables }
 
-cluster_environment_variables = [
-  'SERVER_PORT',
-  'API_DOMAIN',
-  'API_PRODUCTION',
-  'TASK_QUEUE_DOMAIN',
-  'TASK_QUEUE_PORT']
-
-cluster_environment = { name: configuration.get(name) for name in cluster_environment_variables }
+cluster_environment = {
+  'API_SECURE': api_production,
+  'API_HOSTNAME': configuration.get('API_DOMAIN'),
+  'API_PORT': 443 if api_production else 80,
+  'TASK_QUEUE_HOSTNAME': configuration.get('TASK_QUEUE_DOMAIN'),
+  'TASK_QUEUE_PORT': configuration.get('TASK_QUEUE_PORT')
+}
 
 cluster = Cluster(
   configuration.get('CLUSTER_DOMAIN_IP'),

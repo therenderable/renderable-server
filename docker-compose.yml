@@ -74,7 +74,6 @@ services:
     expose:
       - '${API_PORT}'
     environment:
-      - SERVER_PORT
       - API_DOMAIN
       - API_VERSION
       - API_PRODUCTION
