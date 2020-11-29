@@ -11,6 +11,8 @@ secrets:
     file: secrets/registry_encrypted_password
   registry_secret_key:
     file: secrets/registry_secret_key
+  console_encrypted_password:
+    file: secrets/console_encrypted_password
   cache_password:
     file: secrets/cache_password
   database_username:
@@ -226,10 +228,12 @@ services:
     hostname: ${CONSOLE_HOSTNAME}
     expose:
       - '${CONSOLE_PORT}'
+    secrets:
+      - console_encrypted_password
     volumes:
       - console:/data/
       - cluster_certificate:/certs/
-    command: '-H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify'
+    command: '-H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify --admin-password-file /run/secrets/console_encrypted_password'
     depends_on:
       - cluster
     restart: unless-stopped
