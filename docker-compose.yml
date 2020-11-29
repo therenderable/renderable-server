@@ -237,7 +237,7 @@ services:
       - cluster_certificate:/certs/
     entrypoint: ''
     command: '/bin/sh -c \
-      "portainer -H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify --admin-password \"$$(cat $$PORTAINER_PASSWORD_FILE)\""'
+      "./portainer -H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify --admin-password \"$$(cat $$PORTAINER_PASSWORD_FILE)\""'
     depends_on:
       - cluster
     restart: unless-stopped
