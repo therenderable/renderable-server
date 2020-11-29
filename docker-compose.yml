@@ -60,6 +60,9 @@ services:
       - REGISTRY_DOMAIN
       - REGISTRY_HOSTNAME
       - REGISTRY_PORT
+      - CONSOLE_DOMAIN
+      - CONSOLE_HOSTNAME
+      - CONSOLE_PORT
       - STORAGE_DOMAIN
       - STORAGE_HOSTNAME
       - STORAGE_PORT
@@ -143,7 +146,8 @@ services:
     volumes:
       - cluster_certificate:/etc/ssl/certs/cluster/
     depends_on:
-      - api
+      - cluster
+      - container_queue
     restart: unless-stopped
   resource_worker:
     build: resource-worker/
@@ -168,7 +172,10 @@ services:
       - state_queue_username
       - state_queue_password
     depends_on:
-      - api
+      - database
+      - storage
+      - resource_queue
+      - state_queue
     restart: unless-stopped
   cluster:
     image: docker:19.03.12-dind
@@ -214,6 +221,18 @@ services:
     depends_on:
       - cache
     restart: unless-stopped
+  console:
+    image: portainer/portainer:1.24.1-alpine
+    hostname: ${CONSOLE_HOSTNAME}
+    expose:
+      - '${CONSOLE_PORT}'
+    volumes:
+      - console:/data/
+      - cluster_certificate:/certs/
+    command: '-H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify'
+    depends_on:
+      - cluster
+    restart: unless-stopped
   cache:
     image: redis:6.0.5
     hostname: ${CACHE_HOSTNAME}
@@ -252,7 +271,7 @@ services:
     environment:
       - MINIO_ACCESS_KEY_FILE=storage_access_key
       - MINIO_SECRET_KEY_FILE=storage_secret_key
-      - MINIO_BROWSER=off
+      - MINIO_BROWSER=on
     secrets:
       - storage_access_key
       - storage_secret_key
@@ -325,6 +344,7 @@ volumes:
   cluster:
   cluster_certificate:
   registry:
+  console:
   cache:
   database:
   storage:

@@ -56,6 +56,26 @@ http {
     listen ${SERVER_PORT};
     listen [::]:${SERVER_PORT};
 
+    server_name ${CONSOLE_DOMAIN};
+
+    location / {
+      proxy_pass http://${CONSOLE_HOSTNAME}:${CONSOLE_PORT};
+
+      proxy_http_version 1.1;
+      proxy_buffering off;
+
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    }
+  }
+
+  server {
+    listen ${SERVER_PORT};
+    listen [::]:${SERVER_PORT};
+
     server_name ${STORAGE_DOMAIN};
 
     location / {

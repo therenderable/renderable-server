@@ -13,6 +13,9 @@ variables='${SERVER_PORT}
           ${REGISTRY_DOMAIN}
           ${REGISTRY_HOSTNAME}
           ${REGISTRY_PORT}
+          ${CONSOLE_DOMAIN}
+          ${CONSOLE_HOSTNAME}
+          ${CONSOLE_PORT}
           ${STORAGE_DOMAIN}
           ${STORAGE_HOSTNAME}
           ${STORAGE_PORT}
