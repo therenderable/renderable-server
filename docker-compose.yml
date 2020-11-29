@@ -228,12 +228,16 @@ services:
     hostname: ${CONSOLE_HOSTNAME}
     expose:
       - '${CONSOLE_PORT}'
+    environment:
+      - PORTAINER_PASSWORD_FILE=/run/secrets/console_encrypted_password
     secrets:
       - console_encrypted_password
     volumes:
       - console:/data/
       - cluster_certificate:/certs/
-    command: '-H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify --admin-password-file /run/secrets/console_encrypted_password'
+    entrypoint: ''
+    command: '/bin/sh -c \
+      "portainer -H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify --admin-password \"$$(cat $$PORTAINER_PASSWORD_FILE)\""'
     depends_on:
       - cluster
     restart: unless-stopped
