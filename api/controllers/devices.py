@@ -1,5 +1,6 @@
+from renderable_core.models import DeviceDocument, DeviceResponse
+
 import exceptions
-from models import DeviceDocument, DeviceResponse
 
 
 def join(context, device):

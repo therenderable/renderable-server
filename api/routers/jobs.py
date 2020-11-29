@@ -1,9 +1,9 @@
 from typing import Optional
 
 from fastapi import APIRouter, Request, WebSocket, File, UploadFile
+from renderable_core.models import ObjectID, Action, ErrorResponse, JobRequest, JobActionRequest, JobResponse
 
 import exceptions
-from models import ObjectID, Action, ErrorResponse, JobRequest, JobActionRequest, JobResponse
 from controllers import jobs
 
 

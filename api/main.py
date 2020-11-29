@@ -1,11 +1,10 @@
 from pathlib import Path
 
 import uvicorn
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from renderable_core.services import Configuration, Cluster, Database, Storage, WorkQueue, EventQueue
 
-from services import Configuration, Cluster, Database, Storage, WorkQueue, EventQueue
 from routers import api
 
 

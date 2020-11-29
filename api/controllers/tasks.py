@@ -1,9 +1,11 @@
 from typing import List
 import functools
 
-import utils
+from renderable_core import utils
+from renderable_core.models import State, ResourceMessage, ContainerMessage,\
+  JobMessage, JobResponse, TaskResponse
+
 import exceptions
-from models import State, ResourceMessage, ContainerMessage, JobMessage, JobResponse, TaskResponse
 
 
 def update(context, task_id, task):

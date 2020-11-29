@@ -1,9 +1,9 @@
 from pathlib import Path
 import functools
 
-import utils
-from models import ResourceMessage, JobMessage
-from services import Configuration, Database, Storage, WorkQueue, EventQueue
+from renderable_core import utils
+from renderable_core.models import ResourceMessage, JobMessage
+from renderable_core.services import Configuration, Database, Storage, WorkQueue, EventQueue
 
 
 configuration = Configuration(Path('/run/secrets/'))

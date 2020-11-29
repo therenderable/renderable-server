@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from models import ContainerMessage
-from services import Configuration, Autoscaler, WorkQueue
+from renderable_core.models import ContainerMessage
+from renderable_core.services import Configuration, Autoscaler, WorkQueue
 
 
 configuration = Configuration(Path('/run/secrets/'))

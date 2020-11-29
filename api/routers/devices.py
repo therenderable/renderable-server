@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request
 
+from renderable_core.models import ObjectID, NodeType, ErrorResponse, DeviceRequest, DeviceResponse
+
 import exceptions
-from models import ObjectID, NodeType, ErrorResponse, DeviceRequest, DeviceResponse
 from controllers import authentication as auth, devices
 
 

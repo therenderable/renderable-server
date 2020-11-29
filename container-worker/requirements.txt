@@ -1,4 +1,1 @@
-pydantic>=1.7.0
-docker>=4.3.0
-pymongo>=3.11.0
-pika>=1.1.0
+git+https://f2df37d2224599278c1adf7ba248ea3589a85448:x-oauth-basic@github.com/therenderable/renderable-core.git

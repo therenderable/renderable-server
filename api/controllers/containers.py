@@ -1,5 +1,6 @@
+from renderable_core.models import ContainerDocument, ContainerResponse
+
 import exceptions
-from models import ContainerDocument, ContainerResponse
 
 
 def register(context, container):

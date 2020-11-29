@@ -1,9 +1,4 @@
 uvicorn[standard]>=0.11.8
 python-multipart>=0.0.5
-requests>=2.24.0
 fastapi>=0.61.0
-numpy>=1.19.0
-docker>=4.3.0
-pymongo>=3.11.0
-minio>=6.0.0
-pika>=1.1.0
+git+https://f2df37d2224599278c1adf7ba248ea3589a85448:x-oauth-basic@github.com/therenderable/renderable-core.git
