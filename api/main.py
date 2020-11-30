@@ -94,7 +94,10 @@ context = {
   'state_queue': state_queue
 }
 
-app = FastAPI(redoc_url = None)
+app = FastAPI(
+  title = 'Renderable API',
+  description = 'Renderable web API.',
+  redoc_url = None)
 
 app.state.context = context
 
