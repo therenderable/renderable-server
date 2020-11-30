@@ -97,6 +97,7 @@ context = {
 app = FastAPI(
   title = 'Renderable API',
   description = 'Renderable web API.',
+  version = api_version,
   redoc_url = None)
 
 app.state.context = context
