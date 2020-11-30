@@ -3,6 +3,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import renderable_core
 from renderable_core.services import Configuration, Cluster, Database, Storage, WorkQueue, EventQueue
 
 from routers import api
@@ -97,7 +98,7 @@ context = {
 app = FastAPI(
   title = 'Renderable API',
   description = 'Renderable web API.',
-  version = api_version,
+  version = renderable_core.__version__,
   redoc_url = None)
 
 app.state.context = context
