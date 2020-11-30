@@ -150,6 +150,7 @@ services:
     restart: unless-stopped
   cluster:
     image: docker:19.03.12-dind
+    hostname: ${CLUSTER_HOSTNAME}
     expose:
       - '${CLUSTER_PORT}'
       - '${CLUSTER_MANAGER_PORT}'
