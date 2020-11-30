@@ -1,45 +1,5 @@
 version: '3.5'
 
-secrets:
-  api_access_key:
-    file: secrets/api_access_key
-  registry_username:
-    file: secrets/registry_username
-  registry_password:
-    file: secrets/registry_password
-  registry_encrypted_password:
-    file: secrets/registry_encrypted_password
-  registry_secret_key:
-    file: secrets/registry_secret_key
-  console_encrypted_password:
-    file: secrets/console_encrypted_password
-  cache_password:
-    file: secrets/cache_password
-  database_username:
-    file: secrets/database_username
-  database_password:
-    file: secrets/database_password
-  storage_access_key:
-    file: secrets/storage_access_key
-  storage_secret_key:
-    file: secrets/storage_secret_key
-  container_queue_username:
-    file: secrets/container_queue_username
-  container_queue_password:
-    file: secrets/container_queue_password
-  task_queue_username:
-    file: secrets/task_queue_username
-  task_queue_password:
-    file: secrets/task_queue_password
-  resource_queue_username:
-    file: secrets/resource_queue_username
-  resource_queue_password:
-    file: secrets/resource_queue_password
-  state_queue_username:
-    file: secrets/state_queue_username
-  state_queue_password:
-    file: secrets/state_queue_password
-
 services:
   server:
     build: server/
@@ -70,12 +30,13 @@ services:
       - STORAGE_PORT
       - TASK_QUEUE_HOSTNAME
       - TASK_QUEUE_PORT
+    networks:
+      - renderable
     depends_on:
       - api
     restart: unless-stopped
   api:
     build: api/
-    hostname: ${API_HOSTNAME}
     expose:
       - '${API_PORT}'
     environment:
@@ -124,6 +85,10 @@ services:
       - state_queue_password
     volumes:
       - cluster_certificate:/etc/ssl/certs/cluster/
+    networks:
+      renderable:
+        aliases:
+          - ${API_HOSTNAME}
     depends_on:
       - cluster
       - database
@@ -147,6 +112,8 @@ services:
       - container_queue_password
     volumes:
       - cluster_certificate:/etc/ssl/certs/cluster/
+    networks:
+      - renderable
     depends_on:
       - cluster
       - container_queue
@@ -173,6 +140,8 @@ services:
       - resource_queue_password
       - state_queue_username
       - state_queue_password
+    networks:
+      - renderable
     depends_on:
       - database
       - storage
@@ -181,7 +150,6 @@ services:
     restart: unless-stopped
   cluster:
     image: docker:19.03.12-dind
-    hostname: ${CLUSTER_HOSTNAME}
     expose:
       - '${CLUSTER_PORT}'
       - '${CLUSTER_MANAGER_PORT}'
@@ -192,13 +160,16 @@ services:
     volumes:
       - cluster:/var/lib/docker/
       - cluster_certificate:/certs/client/
+    networks:
+      renderable:
+        aliases:
+          - ${CLUSTER_HOSTNAME}
     command: '--insecure-registry=${CLUSTER_INSECURE_REGISTRY}'
     depends_on:
       - registry
     restart: unless-stopped
   registry:
     image: registry:2.7
-    hostname: ${REGISTRY_HOSTNAME}
     expose:
       - '${REGISTRY_PORT}'
     environment:
@@ -216,6 +187,10 @@ services:
       - cache_password
     volumes:
       - registry:/var/lib/registry/
+    networks:
+      renderable:
+        aliases:
+          - ${REGISTRY_HOSTNAME}
     command: '/bin/sh -c \
       "REGISTRY_HTTP_SECRET=\"$$(cat $$REGISTRY_HTTP_SECRET_FILE)\"
       REGISTRY_REDIS_PASSWORD=\"$$(cat $$REGISTRY_REDIS_PASSWORD_FILE)\"
@@ -225,7 +200,6 @@ services:
     restart: unless-stopped
   console:
     image: portainer/portainer:1.24.1-alpine
-    hostname: ${CONSOLE_HOSTNAME}
     expose:
       - '${CONSOLE_PORT}'
     environment:
@@ -235,6 +209,10 @@ services:
     volumes:
       - console:/data/
       - cluster_certificate:/certs/
+    networks:
+      renderable:
+        aliases:
+          - ${CONSOLE_HOSTNAME}
     entrypoint: ''
     command: '/bin/sh -c \
       "./portainer -H tcp://${CLUSTER_HOSTNAME}:${CLUSTER_PORT} --tlsverify --admin-password \"$$(cat $$PORTAINER_PASSWORD_FILE)\""'
@@ -243,7 +221,6 @@ services:
     restart: unless-stopped
   cache:
     image: redis:6.0.5
-    hostname: ${CACHE_HOSTNAME}
     expose:
       - '${CACHE_PORT}'
     environment:
@@ -252,12 +229,15 @@ services:
       - cache_password
     volumes:
       - cache:/data/
+    networks:
+      renderable:
+        aliases:
+          - ${CACHE_HOSTNAME}
     command: '/bin/bash -c \
       "redis-server --port ${CACHE_PORT} --requirepass \"$$(cat $$REDIS_PASSWORD_FILE)\""'
     restart: unless-stopped
   database:
     image: mongo:4.2.6
-    hostname: ${DATABASE_HOSTNAME}
     expose:
       - '${DATABASE_PORT}'
     environment:
@@ -269,11 +249,14 @@ services:
       - database_password
     volumes:
       - database:/data/db/
+    networks:
+      renderable:
+        aliases:
+          - ${DATABASE_HOSTNAME}
     command: 'mongod --port ${DATABASE_PORT}'
     restart: unless-stopped
   storage:
     image: minio/minio:RELEASE.2020-05-16T01-33-21Z
-    hostname: ${STORAGE_HOSTNAME}
     expose:
       - '${STORAGE_PORT}'
     environment:
@@ -285,11 +268,14 @@ services:
       - storage_secret_key
     volumes:
       - storage:/data/
+    networks:
+      renderable:
+        aliases:
+          - ${STORAGE_HOSTNAME}
     command: 'minio server --address :${STORAGE_PORT} /data/'
     restart: unless-stopped
   container_queue:
     image: rabbitmq:3.8-management
-    hostname: ${CONTAINER_QUEUE_HOSTNAME}
     expose:
       - '${CONTAINER_QUEUE_PORT}'
     environment:
@@ -301,10 +287,13 @@ services:
       - container_queue_password
     volumes:
       - container_queue:/data/
+    networks:
+      renderable:
+        aliases:
+          - ${CONTAINER_QUEUE_HOSTNAME}
     restart: unless-stopped
   task_queue:
     image: rabbitmq:3.8-management
-    hostname: ${TASK_QUEUE_HOSTNAME}
     expose:
       - '${TASK_QUEUE_PORT}'
     environment:
@@ -316,10 +305,13 @@ services:
       - task_queue_password
     volumes:
       - task_queue:/data/
+    networks:
+      renderable:
+        aliases:
+          - ${TASK_QUEUE_HOSTNAME}
     restart: unless-stopped
   resource_queue:
     image: rabbitmq:3.8-management
-    hostname: ${RESOURCE_QUEUE_HOSTNAME}
     expose:
       - '${RESOURCE_QUEUE_PORT}'
     environment:
@@ -331,10 +323,13 @@ services:
       - resource_queue_password
     volumes:
       - resource_queue:/data/
+    networks:
+      renderable:
+        aliases:
+          - ${RESOURCE_QUEUE_HOSTNAME}
     restart: unless-stopped
   state_queue:
     image: rabbitmq:3.8-management
-    hostname: ${STATE_QUEUE_HOSTNAME}
     expose:
       - '${STATE_QUEUE_PORT}'
     environment:
@@ -346,7 +341,51 @@ services:
       - state_queue_password
     volumes:
       - state_queue:/data/
+    networks:
+      renderable:
+        aliases:
+          - ${STATE_QUEUE_HOSTNAME}
     restart: unless-stopped
+
+secrets:
+  api_access_key:
+    file: secrets/api_access_key
+  registry_username:
+    file: secrets/registry_username
+  registry_password:
+    file: secrets/registry_password
+  registry_encrypted_password:
+    file: secrets/registry_encrypted_password
+  registry_secret_key:
+    file: secrets/registry_secret_key
+  console_encrypted_password:
+    file: secrets/console_encrypted_password
+  cache_password:
+    file: secrets/cache_password
+  database_username:
+    file: secrets/database_username
+  database_password:
+    file: secrets/database_password
+  storage_access_key:
+    file: secrets/storage_access_key
+  storage_secret_key:
+    file: secrets/storage_secret_key
+  container_queue_username:
+    file: secrets/container_queue_username
+  container_queue_password:
+    file: secrets/container_queue_password
+  task_queue_username:
+    file: secrets/task_queue_username
+  task_queue_password:
+    file: secrets/task_queue_password
+  resource_queue_username:
+    file: secrets/resource_queue_username
+  resource_queue_password:
+    file: secrets/resource_queue_password
+  state_queue_username:
+    file: secrets/state_queue_username
+  state_queue_password:
+    file: secrets/state_queue_password
 
 volumes:
   cluster:
@@ -360,3 +399,6 @@ volumes:
   task_queue:
   resource_queue:
   state_queue:
+
+networks:
+  renderable:
