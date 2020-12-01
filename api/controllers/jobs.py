@@ -45,6 +45,7 @@ def submit(context, job):
   return JobResponse(**job_document.dict(), tasks = task_responses)
 
 def update(context, job_id, job):
+  cluster = context['cluster']
   database = context['database']
   container_queue = context['container_queue']
   task_queue = context['task_queue']
@@ -64,6 +65,8 @@ def update(context, job_id, job):
 
     if job_document.scene_url is None:
       raise exceptions.invalid_scene_resource
+
+    cluster.create_service(job_document.container_name)
 
     container_message = ContainerMessage(
       name = job_document.container_name,
