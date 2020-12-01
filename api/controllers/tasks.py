@@ -32,7 +32,7 @@ def update(context, task_id, task):
   def resolve_task():
     container_message = ContainerMessage(
       name = job_document.container_name,
-      task_count = len(job_document.task_ids),
+      task_count = 1,
       upscaling = False)
 
     container_queue.publish([container_message], 'autoscaling')
