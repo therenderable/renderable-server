@@ -11,7 +11,7 @@ def join(context, device):
   token = cluster.join(device.dict())
 
   device_document = DeviceDocument(
-    **device.dict()
+    **device.dict(),
     cluster_address = address,
     token = token)
 
