@@ -155,16 +155,18 @@ async def listen(context, websocket, job_id):
   database = context['database']
   state_queue = context['state_queue']
 
-  heartbeat_period = int(configuration.get('API_HEARTBEAT_PERIOD'))
+  websocket_timeout = int(configuration.get('API_WEBSOCKET_TIMEOUT'))
+  websocket_heartbeat_period = int(configuration.get('API_WEBSOCKET_HEARTBEAT_PERIOD'))
+
   loop = asyncio.get_event_loop()
 
   async def is_websocket_active():
     try:
       ping_frame = ControlFrame(type = ControlFrameType.ping)
 
-      await asyncio.wait_for(websocket.send_text(ping_frame.json()), 5)
+      await asyncio.wait_for(websocket.send_text(ping_frame.json()), websocket_timeout)
 
-      response = await asyncio.wait_for(websocket.receive_json(), 5)
+      response = await asyncio.wait_for(websocket.receive_json(), websocket_timeout)
       pong_frame = ControlFrame(**response)
 
       return pong_frame.type == ControlFrameType.pong
@@ -174,7 +176,7 @@ async def listen(context, websocket, job_id):
   async def handle_connection():
     while True:
       try:
-        await asyncio.sleep(heartbeat_period)
+        await asyncio.sleep(websocket_heartbeat_period)
         assert await is_websocket_active()
       except:
         await utils.run_as_async(state_queue.publish, JobMessage(), job_id)
@@ -194,7 +196,7 @@ async def listen(context, websocket, job_id):
 
         job_response = JobResponse(**job_document.dict(), tasks = task_responses)
 
-        await websocket.send_text(job_response.json(exclude_unset = True))
+        await asyncio.wait_for(websocket.send_text(job_response.json(exclude_unset = True)), websocket_timeout)
     except:
       channel.stop_consuming()
       channel.connection.close()
