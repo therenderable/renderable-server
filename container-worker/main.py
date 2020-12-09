@@ -20,15 +20,12 @@ container_queue = WorkQueue(
 
 
 def callback(channel, method, container_message):
-  try:
-    autoscaler.scale(
-      container_message.name,
-      container_message.task_count,
-      container_message.upscaling)
+  autoscaler.scale(
+    container_message.name,
+    container_message.task_count,
+    container_message.upscaling)
 
-    channel.basic_ack(delivery_tag = method.delivery_tag)
-  except:
-    channel.basic_nack(delivery_tag = method.delivery_tag)
+  channel.basic_ack(delivery_tag = method.delivery_tag)
 
 
 if __name__ == '__main__':
