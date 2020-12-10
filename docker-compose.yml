@@ -100,7 +100,7 @@ services:
       - state_queue
     restart: unless-stopped
   autoscaler:
-    build: container-worker/
+    build: autoscaler/
     environment:
       - CLUSTER_CLEANUP_PERIOD
       - CLUSTER_COOLDOWN_PERIOD
@@ -121,7 +121,7 @@ services:
       - container_queue
     restart: unless-stopped
   compressor:
-    build: resource-worker/
+    build: compressor/
     environment:
       - API_PRODUCTION
       - DATABASE_HOSTNAME
