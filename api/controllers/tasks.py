@@ -24,7 +24,6 @@ def update(context, task_id, task):
     raise exceptions.invalid_resource_id
 
   job_document = database.find(task_document.job_id, 'jobs')
-  job_response = JobResponse(**job_document.dict())
 
   if job_document.state != State.running:
     raise exceptions.job_not_running
@@ -86,9 +85,13 @@ def update(context, task_id, task):
   else:
     raise exceptions.invalid_task_state(task_document.state, task.state)
 
+  job_document.updated_at = utils.utc_now()
+
+  database.update({ '_id': job_document.id }, job_document, 'jobs')
+
   state_queue.publish(JobMessage(**job_document.dict()), job_document.id)
 
-  return TaskResponse(**task_document.dict(), job = job_response)
+  return TaskResponse(**task_document.dict(), job = JobResponse(**job_document.dict()))
 
 def upload_images(context, task_id, images):
   storage = context['storage']
@@ -109,7 +112,6 @@ def upload_images(context, task_id, images):
     raise exceptions.image_resource_mismatch
 
   job_document = database.find(task_document.job_id, 'jobs')
-  job_response = JobResponse(**job_document.dict())
 
   container_document = database.find({'name': job_document.container_name}, 'containers')
 
@@ -155,11 +157,14 @@ def upload_images(context, task_id, images):
   task_document.image_urls = resource_urls
   task_document.updated_at = utils.utc_now()
 
+  job_document.updated_at = utils.utc_now()
+
   database.update({ '_id': task_id }, task_document, 'tasks')
+  database.update({ '_id': job_document.id }, job_document, 'jobs')
 
   state_queue.publish(JobMessage(**job_document.dict()), job_document.id)
 
-  return TaskResponse(**task_document.dict(), job = job_response)
+  return TaskResponse(**task_document.dict(), job = JobResponse(**job_document.dict()))
 
 def get(context, task_id):
   database = context['database']
