@@ -1,10 +1,10 @@
 FROM python:3.7
 
-LABEL description "Renderable resource worker."
+LABEL description "Renderable autoscaling worker."
 LABEL version "1.0.0"
 LABEL maintainer "Danilo Peixoto <danilo@therenderable.com>"
 
-WORKDIR /usr/src/resource-worker/
+WORKDIR /usr/src/container-worker/
 COPY . .
 
 RUN pip3 install --upgrade pip

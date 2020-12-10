@@ -99,7 +99,7 @@ services:
       - resource_queue
       - state_queue
     restart: unless-stopped
-  container_worker:
+  autoscaler:
     build: container-worker/
     environment:
       - CLUSTER_CLEANUP_PERIOD
@@ -120,7 +120,7 @@ services:
       - cluster
       - container_queue
     restart: unless-stopped
-  resource_worker:
+  compressor:
     build: resource-worker/
     environment:
       - API_PRODUCTION

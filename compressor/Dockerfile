@@ -1,10 +1,10 @@
 FROM python:3.7
 
-LABEL description "Renderable container worker."
+LABEL description "Renderable compressing worker."
 LABEL version "1.0.0"
 LABEL maintainer "Danilo Peixoto <danilo@therenderable.com>"
 
-WORKDIR /usr/src/container-worker/
+WORKDIR /usr/src/resource-worker/
 COPY . .
 
 RUN pip3 install --upgrade pip
