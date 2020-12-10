@@ -102,6 +102,7 @@ services:
   container_worker:
     build: container-worker/
     environment:
+      - CLUSTER_CLEANUP_PERIOD
       - CLUSTER_COOLDOWN_PERIOD
       - CLUSTER_HOSTNAME
       - CLUSTER_PORT

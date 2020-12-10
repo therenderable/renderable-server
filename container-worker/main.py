@@ -10,6 +10,7 @@ autoscaler = Autoscaler(
   configuration.get('CLUSTER_HOSTNAME'),
   configuration.get('CLUSTER_PORT'),
   Path(configuration.get('CLUSTER_CERTIFICATE_PATH')),
+  int(configuration.get('CLUSTER_CLEANUP_PERIOD')),
   int(configuration.get('CLUSTER_COOLDOWN_PERIOD')))
 
 container_queue = WorkQueue(
