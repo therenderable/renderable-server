@@ -4,8 +4,8 @@ Renderable web server.
 
 ## Prerequisites
 
-* [Docker Engine >=19.03.12](https://docs.docker.com/engine)
-* [Docker Compose >=1.27.2](https://docs.docker.com/compose)
+* [Docker Engine (>=19.03.12)](https://docs.docker.com/engine)
+* [Docker Compose (>=1.27.2)](https://docs.docker.com/compose)
 
 ## Installation
 
@@ -19,4 +19,4 @@ docker-compose up -d
 
 Copyright (c) 2020, Renderable, Inc. All rights reserved.
 
-Project developed under a [Proprietary License](LICENSE.md).
+Project developed under a [BSD-3-Clause License](LICENSE.md).

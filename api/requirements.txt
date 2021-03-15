@@ -1,4 +1,4 @@
 uvicorn[standard]>=0.11.8
 python-multipart>=0.0.5
 fastapi>=0.61.0
-git+https://f2df37d2224599278c1adf7ba248ea3589a85448:x-oauth-basic@github.com/therenderable/renderable-core.git
+git+https://github.com/therenderable/renderable-core.git

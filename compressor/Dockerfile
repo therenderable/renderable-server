@@ -2,7 +2,7 @@ FROM python:3.7
 
 LABEL description "Renderable compressing worker."
 LABEL version "1.0.0"
-LABEL maintainer "Danilo Peixoto <danilo@therenderable.com>"
+LABEL maintainer "Danilo Peixoto <danilopeixoto@outlook.com>"
 
 WORKDIR /usr/src/resource-worker/
 COPY . .
